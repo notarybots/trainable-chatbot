@@ -38,7 +38,7 @@ export function EnvChecker() {
           supabaseConnection = `Connection Error: ${err}`;
         }
 
-        // Check Chat API
+        // Check Chat API with detailed error logging
         let chatApi = 'Failed';
         try {
           const response = await fetch('/api/chat', {
@@ -49,13 +49,15 @@ export function EnvChecker() {
               sessionId: 'debug-test'
             })
           });
+          
           if (response.ok) {
-            chatApi = 'Available';
+            chatApi = '✅ Available';
           } else {
-            chatApi = `HTTP ${response.status}: ${response.statusText}`;
+            const errorText = await response.text();
+            chatApi = `❌ HTTP ${response.status}: ${errorText.substring(0, 100)}`;
           }
         } catch (err) {
-          chatApi = `API Error: ${err}`;
+          chatApi = `❌ Network Error: ${err}`;
         }
 
         setEnvStatus({
