@@ -14,7 +14,7 @@ Your Vercel environment variables are using **placeholder values**, not actual c
 
 ### Step 1: Get Your Correct Supabase Anon Key
 1. Go to: https://app.supabase.com
-2. Click your `trainable-chatbot` project
+2. Click your **trainable-chatbot** project (your Supabase project)
 3. Go to **Settings** → **API** (left sidebar)
 4. Find **"anon public"** section (NOT "service_role")
 5. Copy the KEY that starts with `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
@@ -23,7 +23,7 @@ Your Vercel environment variables are using **placeholder values**, not actual c
 
 ### Step 2: Fix Vercel Environment Variables
 1. Go to: https://vercel.com/dashboard
-2. Click your `trainable-chatbot` project
+2. Click your **trainable-chatbot-alpha** project
 3. Go to **Settings** → **Environment Variables**
 4. Update these EXACT variables:
 
