@@ -2,15 +2,15 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
+import Providers from "@/components/providers";
 import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Trainable Chatbot",
-  description: "An AI-powered chatbot that learns from conversations to provide better responses.",
-  keywords: ["chatbot", "AI", "machine learning", "conversation", "training"],
+  description: "A multi-tenant AI-powered chatbot with Supabase backend that learns from conversations.",
+  keywords: ["chatbot", "AI", "machine learning", "conversation", "training", "multi-tenant", "supabase"],
 };
 
 export default function RootLayout({
@@ -21,12 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <Providers>
           {children}
           <Toaster
             position="top-right"
@@ -52,7 +47,7 @@ export default function RootLayout({
               },
             }}
           />
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
