@@ -1,4 +1,5 @@
 
+
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -58,18 +59,54 @@ export async function updateSession(request: NextRequest) {
     supabaseResponse.headers.set('x-tenant-id', tenant)
   }
 
-  // Enhanced redirect logic
+  // Define route patterns
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
                     request.nextUrl.pathname.startsWith('/auth')
   
   const isPublicAPI = request.nextUrl.pathname.startsWith('/api/auth')
   const isPrivateAPI = request.nextUrl.pathname.startsWith('/api/') && !isPublicAPI
+  
+  // Define protected routes - routes that require authentication
+  const protectedRoutes = [
+    '/', // Main chat interface
+    '/admin',
+    '/admin/settings',
+    '/chat',
+    '/dashboard'
+  ]
+  
+  // Define public routes - routes accessible without authentication
+  const publicRoutes = [
+    '/login',
+    '/auth',
+    '/signup',
+    '/forgot-password',
+    '/reset-password'
+  ]
 
-  if (!user && !isAuthPage && !isPublicAPI) {
+  const isProtectedRoute = protectedRoutes.some(route => 
+    request.nextUrl.pathname === route || 
+    request.nextUrl.pathname.startsWith(route + '/')
+  )
+
+  const isPublicRoute = publicRoutes.some(route => 
+    request.nextUrl.pathname === route || 
+    request.nextUrl.pathname.startsWith(route + '/')
+  )
+
+  // Enhanced authentication logic
+  if (!user) {
+    // Handle unauthenticated users (regardless of error state)
+    console.log('Unauthenticated user accessing:', request.nextUrl.pathname, { error: error?.message })
+    
     if (isPrivateAPI) {
       // API routes should return 401 Unauthorized, not redirect
       return new Response(
-        JSON.stringify({ error: 'Unauthorized', message: 'Authentication required' }),
+        JSON.stringify({ 
+          error: 'Unauthorized', 
+          message: 'Authentication required',
+          code: 'AUTH_REQUIRED'
+        }),
         {
           status: 401,
           headers: {
@@ -79,21 +116,50 @@ export async function updateSession(request: NextRequest) {
       )
     }
     
-    // Regular pages should redirect to login
-    const redirectUrl = url.clone()
-    redirectUrl.pathname = '/login'
-    redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)
-    
-    console.log('Redirecting to login:', redirectUrl.toString())
-    return NextResponse.redirect(redirectUrl)
+    if (isProtectedRoute && !isPublicRoute) {
+      // Store intended destination for post-login redirect
+      const redirectUrl = url.clone()
+      redirectUrl.pathname = '/login'
+      
+      // Preserve the intended destination
+      const intendedDestination = request.nextUrl.pathname + request.nextUrl.search
+      redirectUrl.searchParams.set('redirect', intendedDestination)
+      
+      console.log('Middleware redirecting to login with intended destination:', intendedDestination)
+      return NextResponse.redirect(redirectUrl)
+    }
   }
 
   if (user && isAuthPage) {
-    // User is authenticated but on login page, redirect to home
+    // User is authenticated but on auth page - redirect appropriately
     const redirectUrl = url.clone()
-    redirectUrl.pathname = '/'
-    redirectUrl.search = ''
+    
+    // Check if there's an intended destination from the redirect parameter
+    const intendedDestination = request.nextUrl.searchParams.get('redirect')
+    
+    if (intendedDestination && intendedDestination !== '/login') {
+      // Redirect to intended destination
+      redirectUrl.pathname = intendedDestination
+      redirectUrl.search = ''
+      console.log('Redirecting authenticated user to intended destination:', intendedDestination)
+    } else {
+      // Default redirect to home
+      redirectUrl.pathname = '/'
+      redirectUrl.search = ''
+      console.log('Redirecting authenticated user to home')
+    }
+    
     return NextResponse.redirect(redirectUrl)
+  }
+
+  // Handle session refresh and persistence
+  if (user) {
+    // Set authentication headers for better session persistence
+    supabaseResponse.headers.set('x-user-id', user.id)
+    supabaseResponse.headers.set('x-user-email', user.email || '')
+    
+    // Add cache control headers for authenticated requests
+    supabaseResponse.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0')
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're

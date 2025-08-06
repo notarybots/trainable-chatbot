@@ -1,282 +1,321 @@
 
+
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useSupabase } from '@/lib/providers/supabase-provider'
+import { PublicOnlyGuard } from '@/components/auth/auth-guard'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useSupabase } from '@/lib/providers/supabase-provider'
-import toast from 'react-hot-toast'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
+import { 
+  Bot, 
+  Mail, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  LogIn, 
+  UserPlus, 
+  Loader2,
+  AlertCircle,
+  ArrowRight
+} from 'lucide-react'
+import Link from 'next/link'
 
-// Loading component for Suspense fallback
-function LoginPageSkeleton() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-          <div className="h-4 bg-gray-200 rounded animate-pulse mt-2"></div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Main login content component that uses useSearchParams
-function LoginContent() {
-  const [email, setEmail] = useState('demo@example.com') // Pre-fill for testing
-  const [password, setPassword] = useState('demo123') // Pre-fill for testing
+function LoginPageContent() {
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [email, setEmail] = useState('john@doe.com') // Pre-filled for demo
+  const [password, setPassword] = useState('johndoe123') // Pre-filled for demo
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  
+  const { supabase, isAuthenticated, loading: authLoading } = useSupabase()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { supabase, user } = useSupabase()
 
-  const redirectUrl = searchParams?.get('redirect') || '/'
+  // Enhanced post-authentication redirect with multi-attempt logic
+  const attemptRedirect = async (destination: string, attempt = 1, maxAttempts = 3) => {
+    const delays = [300, 600, 900] // Exponential backoff delays
+    
+    try {
+      console.log(`🔄 Redirect attempt ${attempt}/${maxAttempts} to: ${destination}`)
+      
+      // Validate session before redirect
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error || !session) {
+        console.warn(`⚠️  Session not ready on attempt ${attempt}:`, error?.message)
+        
+        if (attempt < maxAttempts) {
+          setTimeout(() => attemptRedirect(destination, attempt + 1, maxAttempts), delays[attempt - 1])
+          return
+        } else {
+          console.error('❌ Session validation failed after all attempts')
+        }
+      }
+      
+      // Attempt redirect
+      router.replace(destination)
+      console.log(`✅ Redirect attempt ${attempt} initiated`)
+      
+    } catch (error) {
+      console.error(`❌ Redirect attempt ${attempt} failed:`, error)
+      
+      if (attempt < maxAttempts) {
+        setTimeout(() => attemptRedirect(destination, attempt + 1, maxAttempts), delays[attempt - 1])
+      } else {
+        // Final fallback - force redirect
+        console.log('🚨 Using fallback redirect method')
+        if (typeof window !== 'undefined') {
+          window.location.href = destination
+        }
+      }
+    }
+  }
 
-  // Redirect if already authenticated
+  // Handle authenticated users with enhanced redirect logic
   useEffect(() => {
-    if (user && !loading) {
-      console.log('User authenticated, redirecting to:', redirectUrl)
-      // Use router.replace instead of router.push to prevent back button issues
-      router.replace(redirectUrl)
+    if (!authLoading && isAuthenticated) {
+      const redirect = searchParams?.get('redirect')
+      const destination = redirect && redirect !== '/login' ? redirect : '/'
+      
+      console.log('🔐 User authenticated, initiating enhanced redirect to:', destination)
+      setLoading(true) // Keep loading active during redirect
+      attemptRedirect(destination)
     }
-  }, [user, loading, router, redirectUrl])
+  }, [isAuthenticated, authLoading, searchParams, router])
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     setLoading(true)
-    setMessage('')
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (error) {
-        setMessage(error.message)
-        toast.error(error.message)
-        setLoading(false)
-      } else {
-        console.log('Sign in successful:', data)
-        toast.success('Signed in successfully!')
-        
-        // Don't set loading to false immediately - keep it true during redirect
-        // The auth state change will trigger the redirect via useEffect
-        
-        // Backup redirect with multiple attempts to ensure it works
-        const attemptRedirect = (attempt = 0) => {
-          if (attempt >= 3) {
-            // Force redirect after multiple attempts
-            window.location.href = redirectUrl
-            return
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: email.split('@')[0] // Simple name from email
+            }
           }
-          
-          setTimeout(() => {
-            // Check if auth state has updated
-            supabase.auth.getSession().then(({ data: { session } }) => {
-              if (session?.user) {
-                router.push(redirectUrl)
-              } else {
-                // Retry if session not ready yet
-                attemptRedirect(attempt + 1)
-              }
-            })
-          }, 300 * (attempt + 1)) // Increasing delay: 300ms, 600ms, 900ms
-        }
+        })
+
+        if (error) throw error
         
-        attemptRedirect()
+        console.log('✅ Sign-up successful, auth state will handle redirect')
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (error) throw error
+        
+        console.log('✅ Sign-in successful, auth state will handle redirect')
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Sign in failed'
-      setMessage(errorMessage)
-      toast.error(errorMessage)
+
+      // Don't set loading to false here - keep it active during auth state change
+    } catch (error: any) {
+      console.error('Auth error:', error)
+      setError(error.message || 'Authentication failed')
       setLoading(false)
     }
   }
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setMessage('')
-
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      })
-
-      if (error) {
-        setMessage(error.message)
-        toast.error(error.message)
-        setLoading(false)
-      } else if (data.user && !data.user.email_confirmed_at) {
-        setMessage('Check your email for the confirmation link!')
-        toast.success('Check your email for the confirmation link!')
-        setLoading(false)
-      } else if (data.user) {
-        toast.success('Account created successfully!')
-        
-        // Same robust redirect logic as sign in
-        const attemptRedirect = (attempt = 0) => {
-          if (attempt >= 3) {
-            // Force redirect after multiple attempts
-            window.location.href = redirectUrl
-            return
-          }
-          
-          setTimeout(() => {
-            // Check if auth state has updated
-            supabase.auth.getSession().then(({ data: { session } }) => {
-              if (session?.user) {
-                router.push(redirectUrl)
-              } else {
-                // Retry if session not ready yet
-                attemptRedirect(attempt + 1)
-              }
-            })
-          }, 300 * (attempt + 1)) // Increasing delay: 300ms, 600ms, 900ms
-        }
-        
-        attemptRedirect()
-      } else {
-        setLoading(false)
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Sign up failed'
-      setMessage(errorMessage)
-      toast.error(errorMessage)
-      setLoading(false)
-    }
+  const getRedirectDestination = () => {
+    const redirect = searchParams?.get('redirect')
+    return redirect && redirect !== '/login' ? redirect : 'dashboard'
   }
 
-  // Show loading state
-  if (user && loading) {
+  if (authLoading || (isAuthenticated && loading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-600">Signing you in...</p>
-        </div>
+      <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">
+                {isAuthenticated ? 'Redirecting...' : 'Loading...'}
+              </h3>
+              <p className="text-gray-600">
+                {isAuthenticated 
+                  ? `Taking you to your ${getRedirectDestination()}...`
+                  : 'Checking your authentication status...'
+                }
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Welcome to Trainable Chatbot</CardTitle>
-          <CardDescription>
-            Sign in to your account or create a new one
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+    <PublicOnlyGuard>
+      <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 p-3 bg-blue-100 rounded-full">
+              <Bot className="h-8 w-8 text-blue-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold">
+              {isSignUp ? 'Create Account' : 'Welcome Back'}
+            </CardTitle>
+            <p className="text-gray-600">
+              {isSignUp 
+                ? 'Sign up to start using the AI chatbot'
+                : `Sign in to access your chatbot ${getRedirectDestination()}`
+              }
+            </p>
+          </CardHeader>
+
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email Field */}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     id="email"
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
                     required
+                    disabled={loading}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 pr-10"
                     required
+                    disabled={loading}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating account...' : 'Sign Up'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+              </div>
 
-          {/* Demo credentials info */}
-          <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
-            <p className="text-sm text-blue-700">
-              <strong>Demo Credentials:</strong><br />
-              Email: demo@example.com<br />
-              Password: demo123
-            </p>
-          </div>
+              {/* Error Display */}
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
-          {message && (
-            <div className={`mt-4 p-3 text-sm rounded ${
-              message.includes('Check your email') || message.includes('successful')
-                ? 'bg-green-50 text-green-700 border border-green-200' 
-                : 'bg-red-50 text-red-700 border border-red-200'
-            }`}>
-              {message}
+              {/* Submit Button */}
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {isSignUp ? 'Creating Account...' : 'Signing In...'}
+                  </>
+                ) : (
+                  <>
+                    {isSignUp ? <UserPlus className="h-4 w-4 mr-2" /> : <LogIn className="h-4 w-4 mr-2" />}
+                    {isSignUp ? 'Create Account' : 'Sign In'}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            {/* Toggle Mode */}
+            <div className="mt-6 text-center">
+              <p className="text-gray-600">
+                {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+              </p>
+              <Button
+                variant="link"
+                onClick={() => {
+                  setIsSignUp(!isSignUp)
+                  setError('')
+                }}
+                disabled={loading}
+                className="p-0 h-auto font-medium"
+              >
+                {isSignUp ? 'Sign in here' : 'Create one here'}
+              </Button>
             </div>
-          )}
+
+            {/* Demo Credentials Notice */}
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800 text-center">
+                <Bot className="h-4 w-4 inline mr-1" />
+                Demo credentials are pre-filled for quick testing
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </PublicOnlyGuard>
+  )
+}
+
+function LoginPageSkeleton() {
+  return (
+    <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-screen">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <Skeleton className="h-16 w-16 rounded-full mx-auto mb-4" />
+          <Skeleton className="h-8 w-48 mx-auto mb-2" />
+          <Skeleton className="h-4 w-64 mx-auto" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-12" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-full" />
+          <div className="text-center">
+            <Skeleton className="h-4 w-32 mx-auto mb-2" />
+            <Skeleton className="h-4 w-24 mx-auto" />
+          </div>
         </CardContent>
       </Card>
     </div>
   )
 }
 
-// Main page component with Suspense wrapper
 export default function LoginPage() {
   return (
     <Suspense fallback={<LoginPageSkeleton />}>
-      <LoginContent />
+      <LoginPageContent />
     </Suspense>
   )
 }

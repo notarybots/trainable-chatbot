@@ -1,31 +1,52 @@
+
+> dev
+> next dev
+
   ▲ Next.js 14.2.28
-  - Local:        http://localhost:3001
+  - Local:        http://localhost:3000
   - Environments: .env.local, .env
 
  ✓ Starting...
- ✓ Ready in 3.2s
- ✓ Compiled /middleware in 244ms (144 modules)
-Redirecting to login: http://localhost:3001/login?redirect=%2F
-Redirecting to login: http://localhost:3001/login?redirect=%2F
+ ✓ Ready in 3.7s
+ ✓ Compiled /middleware in 344ms (144 modules)
+Unauthenticated user accessing: / { error: 'Auth session missing!' }
+Middleware redirecting to login with intended destination: /
+Unauthenticated user accessing: / { error: 'Auth session missing!' }
+Middleware redirecting to login with intended destination: /
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
  ○ Compiling /login ...
- ✓ Compiled /login in 4.4s (909 modules)
- GET /login?redirect=%2F 200 in 5035ms
- ✓ Compiled in 750ms (446 modules)
- GET /login 200 in 153ms
+ ✓ Compiled /login in 6.1s (941 modules)
+ GET /login 200 in 6550ms
+Unauthenticated user accessing: /api/conversations { error: 'Auth session missing!' }
+Unauthenticated user accessing: /admin/settings { error: 'Auth session missing!' }
+Middleware redirecting to login with intended destination: /admin/settings
+ ✓ Compiled in 611ms (457 modules)
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ GET /login 200 in 50ms
+Unauthenticated user accessing: /admin/settings { error: 'Auth session missing!' }
+Middleware redirecting to login with intended destination: /admin/settings
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
  GET /login 200 in 42ms
-Redirecting to login: http://localhost:3001/login?redirect=%2Fadmin%2Fsettings
- GET /login?redirect=%2Fadmin%2Fsettings 200 in 38ms
+Unauthenticated user accessing: /auth/auth-code-error { error: 'Auth session missing!' }
+ ○ Compiling /auth/auth-code-error ...
+ ✓ Compiled /auth/auth-code-error in 2.6s (926 modules)
+ GET /auth/auth-code-error 200 in 2672ms
+Unauthenticated user accessing: / { error: 'Auth session missing!' }
+Middleware redirecting to login with intended destination: /
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
  GET /login 200 in 40ms
-Redirecting to login: http://localhost:3001/login?redirect=%2F
-Redirecting to login: http://localhost:3001/login?redirect=%2Fadmin%2Fsettings
-Redirecting to login: http://localhost:3001/login?redirect=%2F
- GET /login 200 in 45ms
- GET /login 200 in 37ms
-Redirecting to login: http://localhost:3001/login?redirect=%2Fadmin%2Fsettings
- GET /login 200 in 31ms
- GET /login 200 in 40ms
-Redirecting to login: http://localhost:3001/login?redirect=%2F
- GET /login 200 in 49ms
- GET /login 200 in 31ms
-Redirecting to login: http://localhost:3001/login?redirect=%2Fadmin%2Fsettings
- GET /login 200 in 34ms
+Unauthenticated user accessing: /admin/settings { error: 'Auth session missing!' }
+Middleware redirecting to login with intended destination: /admin/settings
+Unauthenticated user accessing: /non-existent-route { error: 'Auth session missing!' }
+ ✓ Compiled /_not-found in 293ms (929 modules)
+ GET /non-existent-route 404 in 369ms
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ GET /login 200 in 42ms
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ GET /login 200 in 35ms
+Unauthenticated user accessing: / { error: 'Auth session missing!' }
+Middleware redirecting to login with intended destination: /
+Unauthenticated user accessing: /admin/settings { error: 'Auth session missing!' }
+Middleware redirecting to login with intended destination: /admin/settings
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ HEAD /login 200 in 41ms

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -10,11 +11,12 @@ import { MessageInput } from './message-input';
 import { ChatHeader } from './chat-header';
 import { SessionSidebar } from './session-sidebar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Shield, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import toast from 'react-hot-toast';
 
 export function ChatContainer() {
-  const { isAuthenticated, loading: authLoading, user } = useSupabase();
+  const { isAuthenticated, loading: authLoading, user, refreshSession } = useSupabase();
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
@@ -23,6 +25,7 @@ export function ChatContainer() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isAutoScrolling = useRef(true);
 
@@ -35,7 +38,30 @@ export function ChatContainer() {
     }
   };
 
-  // Load conversations on mount - but only when authenticated
+  // Enhanced session validation
+  const validateSession = async () => {
+    if (!isAuthenticated) {
+      setSessionError(true)
+      return false
+    }
+
+    try {
+      const response = await fetch('/api/conversations')
+      if (response.status === 401) {
+        console.warn('Session validation failed - 401 Unauthorized')
+        setSessionError(true)
+        return false
+      }
+      setSessionError(false)
+      return true
+    } catch (error) {
+      console.error('Session validation error:', error)
+      setSessionError(true)
+      return false
+    }
+  }
+
+  // Load conversations with enhanced error handling
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       loadConversations();
@@ -46,14 +72,11 @@ export function ChatContainer() {
 
   // Enhanced scroll management
   useEffect(() => {
-    // Always scroll to bottom when new messages arrive
     scrollToBottom(true);
   }, [messages]);
 
-  // Enhanced scroll behavior for processing state
   useEffect(() => {
     if (chatState === 'processing') {
-      // Ensure we're at the bottom when starting to process
       scrollToBottom(true);
     }
   }, [chatState]);
@@ -61,20 +84,30 @@ export function ChatContainer() {
   const loadConversations = async () => {
     if (!isAuthenticated) {
       console.warn('Attempted to load conversations without authentication');
+      setError('Authentication required')
       return;
+    }
+
+    // Validate session first
+    const sessionValid = await validateSession()
+    if (!sessionValid) {
+      setError('Session expired - please refresh')
+      return
     }
 
     try {
       setError(null);
       const response = await fetch('/api/conversations');
+      
       if (response.ok) {
         const data = await response.json();
         setConversations(data);
         console.log(`Loaded ${data?.length || 0} conversations`);
       } else if (response.status === 401) {
         console.error('Unauthorized access to conversations');
+        setSessionError(true)
+        setError('Session expired - please sign in again');
         toast.error('Session expired. Please sign in again.');
-        setError('Authentication required');
       } else {
         console.error('Failed to load conversations:', response.status);
         toast.error('Failed to load conversations');
@@ -102,6 +135,7 @@ export function ChatContainer() {
         setCurrentConversation(data);
         setMessages(data.messages || []);
       } else if (response.status === 401) {
+        setSessionError(true)
         toast.error('Session expired. Please sign in again.');
       } else {
         console.error('Failed to load conversation');
@@ -137,6 +171,7 @@ export function ChatContainer() {
         console.log('Created new conversation:', newConversation.id);
         return newConversation;
       } else if (response.status === 401) {
+        setSessionError(true)
         toast.error('Session expired. Please sign in again.');
         return null;
       } else {
@@ -225,6 +260,7 @@ export function ChatContainer() {
         console.error('Chat API Error:', response.status, response.statusText, errorText);
         
         if (response.status === 401) {
+          setSessionError(true)
           toast.error('Session expired. Please sign in again.');
           return;
         }
@@ -291,6 +327,7 @@ export function ChatContainer() {
         }
         toast.success('Conversation deleted');
       } else if (response.status === 401) {
+        setSessionError(true)
         toast.error('Session expired. Please sign in again.');
       } else {
         toast.error('Failed to delete conversation');
@@ -300,6 +337,20 @@ export function ChatContainer() {
       toast.error('Failed to delete conversation');
     }
   };
+
+  const handleRefreshSession = async () => {
+    try {
+      await refreshSession()
+      setSessionError(false)
+      setError(null)
+      // Retry loading conversations
+      loadConversations()
+      toast.success('Session refreshed successfully')
+    } catch (error) {
+      console.error('Failed to refresh session:', error)
+      toast.error('Failed to refresh session')
+    }
+  }
 
   // Show authentication loading state
   if (authLoading) {
@@ -321,11 +372,38 @@ export function ChatContainer() {
       <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden items-center justify-center">
         <Card className="w-full max-w-sm mx-4">
           <CardContent className="text-center p-6">
-            <AlertCircle className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+            <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Sign In Required</h3>
             <p className="text-gray-600 mb-4">
               Please sign in to start chatting with the AI assistant.
             </p>
+            <Button asChild className="w-full">
+              <a href="/login">
+                <Shield className="h-4 w-4 mr-2" />
+                Sign In
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show session error state
+  if (sessionError) {
+    return (
+      <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden items-center justify-center">
+        <Card className="w-full max-w-sm mx-4">
+          <CardContent className="text-center p-6">
+            <AlertCircle className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Session Expired</h3>
+            <p className="text-gray-600 mb-4">
+              Your session has expired. Please refresh to continue.
+            </p>
+            <Button onClick={handleRefreshSession} className="w-full">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Session
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -355,15 +433,23 @@ export function ChatContainer() {
             <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Error Loading Chat</h3>
             <p className="text-gray-600 mb-4">{error}</p>
-            <button 
-              onClick={() => {
-                setError(null);
-                loadConversations();
-              }}
-              className="text-blue-600 hover:text-blue-800"
-            >
-              Try again
-            </button>
+            <div className="flex gap-2">
+              {sessionError && (
+                <Button onClick={handleRefreshSession} variant="outline" className="flex-1">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+              )}
+              <Button 
+                onClick={() => {
+                  setError(null);
+                  loadConversations();
+                }}
+                className={sessionError ? "flex-1" : "w-full"}
+              >
+                Try Again
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -419,7 +505,7 @@ export function ChatContainer() {
         
         <MessageInput
           onSendMessage={sendMessage}
-          disabled={chatState === 'processing' || loading || !isAuthenticated}
+          disabled={chatState === 'processing' || loading || !isAuthenticated || sessionError}
           isLoading={chatState === 'processing'}
         />
       </div>
