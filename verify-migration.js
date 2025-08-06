@@ -69,7 +69,7 @@ async function verifyTables() {
           .from('conversations')
           .insert({
             tenant_id: tenant.id,
-            user_id: '550e8400-e29b-41d4-a716-446655440000',
+            user_id: 'a5fd006f-7e4f-4c8f-ae59-19fb7c4bfb3e',
             title: 'Migration Test Conversation'
           })
           .select()
