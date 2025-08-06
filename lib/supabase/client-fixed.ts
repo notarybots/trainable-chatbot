@@ -13,10 +13,10 @@ if (!supabaseAnonKey) {
   throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable')
 }
 
-// Validate that we have a key (temporarily allow service key for development)
+// Validate that we're using the anonymous key, not service key
 if (supabaseAnonKey.includes('service_role')) {
-  console.warn('⚠️ WARNING: Using service role key as anonymous key. This should be fixed in production.')
-  // Don't throw error in development, but warn
+  console.error('🚨 CRITICAL: Using service role key as anonymous key! This is a security issue.')
+  throw new Error('Invalid anonymous key configuration')
 }
 
 export const createClient = () => {
