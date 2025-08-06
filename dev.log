@@ -1,23 +1,18 @@
-
-> dev
-> next dev
-
   ▲ Next.js 14.2.28
   - Local:        http://localhost:3000
   - Environments: .env.local, .env
 
  ✓ Starting...
-Attention: Next.js now collects completely anonymous telemetry regarding usage.
-This information is used to shape Next.js' roadmap and prioritize features.
-You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
-https://nextjs.org/telemetry
-
- ✓ Ready in 2.5s
- ○ Compiling /middleware ...
- ✓ Compiled /middleware in 858ms (144 modules)
-<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (108kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Ready in 4.5s
+ ✓ Compiled /middleware in 233ms (144 modules)
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
  ○ Compiling /login ...
- ✓ Compiled /login in 6.1s (777 modules)
- POST /login 200 in 6571ms
- ✓ Compiled in 557ms (375 modules)
- GET /login 200 in 55ms
+ ✓ Compiled /login in 6.4s (946 modules)
+ GET /login 200 in 6949ms
+ ✓ Compiled in 630ms (460 modules)
+Unauthenticated user accessing: / { error: 'Auth session missing!' }
+Middleware redirecting to login with intended destination: /
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ GET /login 200 in 48ms
+Unauthenticated user accessing: / { error: 'Auth session missing!' }
+Middleware redirecting to login with intended destination: /

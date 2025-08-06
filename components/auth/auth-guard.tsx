@@ -31,12 +31,16 @@ export function AuthGuard({
   const searchParams = useSearchParams()
   const [refreshing, setRefreshing] = useState(false)
 
-  // Handle intended destination after authentication
+  // Handle intended destination after authentication (prevent infinite redirects)
   useEffect(() => {
     if (!loading && isAuthenticated && requireAuth) {
       const redirect = searchParams?.get('redirect')
-      if (redirect && redirect !== pathname && redirect !== '/login') {
+      // Only redirect if it's a valid path and different from current location
+      if (redirect && redirect !== pathname && redirect !== '/login' && redirect.startsWith('/')) {
         console.log('AuthGuard: Redirecting to intended destination:', redirect)
+        // Clear the redirect param to prevent loops
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('redirect')
         router.replace(redirect)
       }
     }

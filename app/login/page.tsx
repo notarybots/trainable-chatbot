@@ -38,55 +38,19 @@ function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Enhanced post-authentication redirect with multi-attempt logic
-  const attemptRedirect = async (destination: string, attempt = 1, maxAttempts = 3) => {
-    const delays = [300, 600, 900] // Exponential backoff delays
-    
-    try {
-      console.log(`🔄 Redirect attempt ${attempt}/${maxAttempts} to: ${destination}`)
-      
-      // Validate session before redirect
-      const { data: { session }, error } = await supabase.auth.getSession()
-      
-      if (error || !session) {
-        console.warn(`⚠️  Session not ready on attempt ${attempt}:`, error?.message)
-        
-        if (attempt < maxAttempts) {
-          setTimeout(() => attemptRedirect(destination, attempt + 1, maxAttempts), delays[attempt - 1])
-          return
-        } else {
-          console.error('❌ Session validation failed after all attempts')
-        }
-      }
-      
-      // Attempt redirect
-      router.replace(destination)
-      console.log(`✅ Redirect attempt ${attempt} initiated`)
-      
-    } catch (error) {
-      console.error(`❌ Redirect attempt ${attempt} failed:`, error)
-      
-      if (attempt < maxAttempts) {
-        setTimeout(() => attemptRedirect(destination, attempt + 1, maxAttempts), delays[attempt - 1])
-      } else {
-        // Final fallback - force redirect
-        console.log('🚨 Using fallback redirect method')
-        if (typeof window !== 'undefined') {
-          window.location.href = destination
-        }
-      }
-    }
-  }
-
-  // Handle authenticated users with enhanced redirect logic
+  // Simple and reliable post-authentication redirect
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       const redirect = searchParams?.get('redirect')
       const destination = redirect && redirect !== '/login' ? redirect : '/'
       
-      console.log('🔐 User authenticated, initiating enhanced redirect to:', destination)
+      console.log('🔐 User authenticated, redirecting to:', destination)
       setLoading(true) // Keep loading active during redirect
-      attemptRedirect(destination)
+      
+      // Simple redirect - let middleware and route guards handle validation
+      setTimeout(() => {
+        router.replace(destination)
+      }, 100) // Small delay to ensure auth state propagation
     }
   }, [isAuthenticated, authLoading, searchParams, router])
 
@@ -131,7 +95,7 @@ function LoginPageContent() {
 
   const getRedirectDestination = () => {
     const redirect = searchParams?.get('redirect')
-    return redirect && redirect !== '/login' ? redirect : 'dashboard'
+    return redirect && redirect !== '/login' ? redirect : 'home'
   }
 
   if (authLoading || (isAuthenticated && loading)) {

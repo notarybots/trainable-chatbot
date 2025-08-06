@@ -38,7 +38,7 @@ export function RouteGuard({
   const [validating, setValidating] = useState(true)
   const [sessionValidated, setSessionValidated] = useState(false)
 
-  // Validate session on mount and when auth state changes
+  // Simplified session validation - let middleware handle main redirects
   useEffect(() => {
     const validateSession = async () => {
       if (loading) return
@@ -46,17 +46,14 @@ export function RouteGuard({
       setValidating(true)
 
       try {
-        // If authentication is required but user is not authenticated
+        // Simple validation without redirects - middleware handles auth redirects
         if (requireAuth && !isAuthenticated) {
-          const currentPath = pathname
-          const loginPath = redirectTo || `/login?redirect=${encodeURIComponent(currentPath)}`
-          
-          console.log('RouteGuard: Redirecting unauthenticated user to login')
-          router.replace(loginPath)
+          console.log('RouteGuard: User not authenticated, middleware will handle redirect')
+          setValidating(false)
           return
         }
 
-        // If admin access is required
+        // Check admin access if required
         if (requireAuth && adminOnly && isAuthenticated) {
           const isAdmin = user?.user_metadata?.role === 'admin' || 
                           user?.app_metadata?.role === 'admin'
@@ -74,17 +71,7 @@ export function RouteGuard({
 
       } catch (error) {
         console.error('RouteGuard: Session validation error:', error)
-        
-        // Try to refresh session
-        if (requireAuth && isAuthenticated) {
-          try {
-            await refreshSession()
-            setSessionValidated(true)
-          } catch (refreshError) {
-            console.error('RouteGuard: Session refresh failed:', refreshError)
-            router.replace('/login')
-          }
-        }
+        setSessionValidated(false)
       } finally {
         setValidating(false)
       }
@@ -97,9 +84,7 @@ export function RouteGuard({
     isAuthenticated, 
     requireAuth, 
     adminOnly, 
-    pathname, 
     router, 
-    redirectTo, 
     refreshSession
   ])
 
@@ -115,8 +100,8 @@ export function RouteGuard({
     )
   }
 
-  // Don't render children until session is validated
-  if (requireAuth && !sessionValidated) {
+  // Don't render children until session is validated (only for authenticated users)
+  if (requireAuth && isAuthenticated && !sessionValidated) {
     return fallback || (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

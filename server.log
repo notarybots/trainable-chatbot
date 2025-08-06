@@ -50,3 +50,4 @@ Unauthenticated user accessing: /admin/settings { error: 'Auth session missing!'
 Middleware redirecting to login with intended destination: /admin/settings
 Unauthenticated user accessing: /login { error: 'Auth session missing!' }
  HEAD /login 200 in 41ms
+[?25h
