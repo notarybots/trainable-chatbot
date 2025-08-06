@@ -101,11 +101,31 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Create conversation API error:', error);
+    
+    let errorMessage = 'Internal server error';
+    let errorCode = 500;
+    
+    if (error instanceof Error) {
+      // Check for specific database errors
+      if (error.message?.includes('table') && error.message?.includes('conversations')) {
+        errorMessage = 'Database not properly initialized. Please run the migration script.';
+        errorCode = 503; // Service Unavailable
+      } else if (error.message?.includes('policy') || error.message?.includes('PGRST301')) {
+        errorMessage = 'Authentication or authorization error. Please check your login status.';
+        errorCode = 403; // Forbidden
+      }
+    }
+    
     return new Response(JSON.stringify({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: errorMessage,
+      details: error instanceof Error ? error.message : 'Unknown error',
+      debugInfo: {
+        timestamp: new Date().toISOString(),
+        errorType: error?.constructor?.name || 'Unknown',
+        hint: 'Check server logs for more details'
+      }
     }), {
-      status: 500,
+      status: errorCode,
       headers: { 'Content-Type': 'application/json' },
     });
   }

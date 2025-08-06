@@ -73,6 +73,20 @@ export async function createConversation(conversation: ConversationInsert): Prom
 
   if (error) {
     console.error('Error creating conversation:', error)
+    
+    // Check if it's a table not found error
+    if (error.message?.includes('table') && error.message?.includes('conversations')) {
+      console.error('MIGRATION REQUIRED: conversations table does not exist!')
+      console.error('Please run the SQL script: create_tables_manually.sql in your Supabase dashboard')
+    }
+    
+    // Check if it's an RLS policy error
+    if (error.message?.includes('policy') || error.code === 'PGRST301') {
+      console.error('RLS POLICY ERROR: User may not have permission to create conversations')
+      console.error('Tenant ID:', conversation.tenant_id)
+      console.error('User ID:', conversation.user_id)
+    }
+    
     return null
   }
 
