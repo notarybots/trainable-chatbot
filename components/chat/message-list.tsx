@@ -80,7 +80,7 @@ export function MessageList({ messages, chatState, progress, messagesEndRef }: M
                     : 'text-gray-500 dark:text-gray-400'
                 }`}
               >
-                {formatTimestamp(message.timestamp)}
+                {formatTimestamp(message.created_at)}
               </div>
             </div>
             

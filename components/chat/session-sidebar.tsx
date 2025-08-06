@@ -108,7 +108,7 @@ export function SessionSidebar({
                         {formatTimestamp(session.updatedAt)}
                       </p>
                       <p className="text-xs text-gray-400 dark:text-gray-500">
-                        {session.messages.length} messages
+                        {session.messages?.length || 0} messages
                       </p>
                     </div>
                   </div>

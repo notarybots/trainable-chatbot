@@ -80,13 +80,12 @@ export interface Database {
           }
         ]
       }
-      chat_sessions: {
+      conversations: {
         Row: {
           id: string
           tenant_id: string
           user_id: string
-          title: string | null
-          messages: Json[]
+          title: string
           metadata: Json | null
           created_at: string
           updated_at: string
@@ -95,8 +94,7 @@ export interface Database {
           id?: string
           tenant_id: string
           user_id: string
-          title?: string | null
-          messages?: Json[]
+          title?: string
           metadata?: Json | null
           created_at?: string
           updated_at?: string
@@ -105,17 +103,50 @@ export interface Database {
           id?: string
           tenant_id?: string
           user_id?: string
-          title?: string | null
-          messages?: Json[]
+          title?: string
           metadata?: Json | null
           created_at?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "chat_sessions_tenant_id_fkey"
+            foreignKeyName: "conversations_tenant_id_fkey"
             columns: ["tenant_id"]
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          role: string
+          content: string
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          role: string
+          content: string
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          role?: string
+          content?: string
+          metadata?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           }
         ]

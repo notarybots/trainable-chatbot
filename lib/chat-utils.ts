@@ -4,15 +4,14 @@ import { Message, StreamingResponse } from './types';
 export const createMessage = (
   content: string,
   role: 'user' | 'assistant' | 'system',
-  sessionId: string,
-  userId?: string
+  conversationId: string
 ): Message => ({
   id: crypto.randomUUID(),
   content,
   role,
-  timestamp: new Date(),
-  sessionId,
-  userId,
+  created_at: new Date().toISOString(),
+  conversation_id: conversationId,
+  metadata: {},
 });
 
 export const formatMessageForAPI = (message: Message) => ({
@@ -82,9 +81,10 @@ export const generateSessionTitle = (firstMessage: string): string => {
   return words.join(' ') + (firstMessage.split(' ').length > 6 ? '...' : '');
 };
 
-export const formatTimestamp = (timestamp: Date): string => {
+export const formatTimestamp = (timestamp: string | Date): string => {
+  const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
   const now = new Date();
-  const diff = now.getTime() - timestamp.getTime();
+  const diff = now.getTime() - date.getTime();
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
@@ -94,5 +94,5 @@ export const formatTimestamp = (timestamp: Date): string => {
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
   
-  return timestamp.toLocaleDateString();
+  return date.toLocaleDateString();
 };

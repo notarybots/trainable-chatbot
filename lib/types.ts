@@ -3,29 +3,37 @@ export interface Message {
   id: string;
   content: string;
   role: 'user' | 'assistant' | 'system';
-  timestamp: Date;
-  sessionId: string;
-  userId?: string;
+  created_at: string;
+  conversation_id: string;
   metadata?: {
     model?: string;
     tokens?: number;
     processing_time?: number;
+    timestamp?: string;
   };
 }
 
-export interface ChatSession {
+export interface Conversation {
   id: string;
   title: string;
-  userId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  messages: Message[];
-  isActive: boolean;
+  user_id: string;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  messages?: Message[];
   metadata?: {
     model?: string;
     systemPrompt?: string;
     temperature?: number;
   };
+}
+
+// Legacy types for backward compatibility
+export interface ChatSession extends Conversation {
+  userId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isActive: boolean;
 }
 
 export interface User {
