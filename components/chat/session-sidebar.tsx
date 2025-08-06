@@ -35,7 +35,7 @@ export function SessionSidebar({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            className="absolute inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
             onClick={onToggle}
           />
         )}
@@ -46,8 +46,9 @@ export function SessionSidebar({
         initial={{ x: -300 }}
         animate={{ x: isOpen ? 0 : -300 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 lg:relative lg:translate-x-0 lg:block"
-        style={{ transform: isOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+        className={`absolute left-0 top-0 h-full w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 lg:relative lg:translate-x-0 ${
+          isOpen ? 'block' : 'hidden lg:block'
+        }`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}

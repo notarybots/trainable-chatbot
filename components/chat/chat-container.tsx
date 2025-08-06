@@ -148,7 +148,7 @@ export function ChatContainer() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden">
       <SessionSidebar
         sessions={sessions}
         currentSession={currentSession}
@@ -159,19 +159,21 @@ export function ChatContainer() {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
       
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <ChatHeader
           currentSession={currentSession}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           onNewChat={createNewSession}
         />
         
-        <MessageList
-          messages={messages}
-          chatState={chatState}
-          progress={progress}
-          messagesEndRef={messagesEndRef}
-        />
+        <div className="flex-1 min-h-0">
+          <MessageList
+            messages={messages}
+            chatState={chatState}
+            progress={progress}
+            messagesEndRef={messagesEndRef}
+          />
+        </div>
         
         <MessageInput
           onSendMessage={sendMessage}
