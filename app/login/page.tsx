@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSupabase } from '@/lib/providers/supabase-provider'
 import toast from 'react-hot-toast'
 
-export default function LoginPage() {
+// Loading component for Suspense fallback
+function LoginPageSkeleton() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse mt-2"></div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Main login content component that uses useSearchParams
+function LoginContent() {
   const [email, setEmail] = useState('demo@example.com') // Pre-fill for testing
   const [password, setPassword] = useState('demo123') // Pre-fill for testing
   const [loading, setLoading] = useState(false)
@@ -20,7 +42,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams()
   const { supabase, user } = useSupabase()
 
-  const redirectUrl = searchParams.get('redirect') || '/'
+  const redirectUrl = searchParams?.get('redirect') || '/'
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -199,5 +221,14 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+// Main page component with Suspense wrapper
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageSkeleton />}>
+      <LoginContent />
+    </Suspense>
   )
 }
