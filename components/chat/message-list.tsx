@@ -5,7 +5,7 @@ import { Message, ChatState } from '@/lib/types';
 import { formatTimestamp } from '@/lib/chat-utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Bot, Loader2 } from 'lucide-react';
-import { RefObject } from 'react';
+import { RefObject, useEffect, useRef } from 'react';
 
 interface MessageListProps {
   messages: Message[];
@@ -15,8 +15,37 @@ interface MessageListProps {
 }
 
 export function MessageList({ messages, chatState, progress, messagesEndRef }: MessageListProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Ensure proper scrolling behavior
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      // Add smooth scrolling CSS property
+      container.style.scrollBehavior = 'smooth';
+    }
+  }, []);
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div 
+      ref={scrollContainerRef}
+      className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 scroll-smooth scrollbar-thin"
+      style={{
+        // Ensure the container can scroll properly
+        maxHeight: '100%',
+        minHeight: 0,
+      }}
+    >
+      {messages.length === 0 && chatState === 'idle' && (
+        <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+          <div className="text-center">
+            <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium mb-2">Welcome to the Trainable Chatbot!</p>
+            <p className="text-sm">Start a conversation by typing a message below.</p>
+          </div>
+        </div>
+      )}
+      
       <AnimatePresence>
         {messages.map((message) => (
           <motion.div

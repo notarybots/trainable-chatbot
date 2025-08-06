@@ -18,14 +18,30 @@ export function ChatContainer() {
   const [progress, setProgress] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isAutoScrolling = useRef(true);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (force = false) => {
+    if (messagesEndRef.current && (isAutoScrolling.current || force)) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end'
+      });
+    }
   };
 
+  // Enhanced scroll management
   useEffect(() => {
-    scrollToBottom();
+    // Always scroll to bottom when new messages arrive
+    scrollToBottom(true);
   }, [messages]);
+
+  // Enhanced scroll behavior for processing state
+  useEffect(() => {
+    if (chatState === 'processing') {
+      // Ensure we're at the bottom when starting to process
+      scrollToBottom(true);
+    }
+  }, [chatState]);
 
   const createNewSession = (): ChatSession => {
     const newSession: ChatSession = {

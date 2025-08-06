@@ -85,7 +85,7 @@ export default function Home() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-96 border rounded-lg">
+            <div className="h-[600px] border rounded-lg">
               <ChatContainer />
             </div>
           </CardContent>
