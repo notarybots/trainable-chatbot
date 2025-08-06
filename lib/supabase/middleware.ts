@@ -63,9 +63,23 @@ export async function updateSession(request: NextRequest) {
                     request.nextUrl.pathname.startsWith('/auth')
   
   const isPublicAPI = request.nextUrl.pathname.startsWith('/api/auth')
+  const isPrivateAPI = request.nextUrl.pathname.startsWith('/api/') && !isPublicAPI
 
   if (!user && !isAuthPage && !isPublicAPI) {
-    // no user, potentially respond by redirecting the user to the login page
+    if (isPrivateAPI) {
+      // API routes should return 401 Unauthorized, not redirect
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized', message: 'Authentication required' }),
+        {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+    }
+    
+    // Regular pages should redirect to login
     const redirectUrl = url.clone()
     redirectUrl.pathname = '/login'
     redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)

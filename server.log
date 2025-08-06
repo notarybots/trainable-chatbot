@@ -1,0 +1,31 @@
+  ▲ Next.js 14.2.28
+  - Local:        http://localhost:3001
+  - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 3.2s
+ ✓ Compiled /middleware in 244ms (144 modules)
+Redirecting to login: http://localhost:3001/login?redirect=%2F
+Redirecting to login: http://localhost:3001/login?redirect=%2F
+ ○ Compiling /login ...
+ ✓ Compiled /login in 4.4s (909 modules)
+ GET /login?redirect=%2F 200 in 5035ms
+ ✓ Compiled in 750ms (446 modules)
+ GET /login 200 in 153ms
+ GET /login 200 in 42ms
+Redirecting to login: http://localhost:3001/login?redirect=%2Fadmin%2Fsettings
+ GET /login?redirect=%2Fadmin%2Fsettings 200 in 38ms
+ GET /login 200 in 40ms
+Redirecting to login: http://localhost:3001/login?redirect=%2F
+Redirecting to login: http://localhost:3001/login?redirect=%2Fadmin%2Fsettings
+Redirecting to login: http://localhost:3001/login?redirect=%2F
+ GET /login 200 in 45ms
+ GET /login 200 in 37ms
+Redirecting to login: http://localhost:3001/login?redirect=%2Fadmin%2Fsettings
+ GET /login 200 in 31ms
+ GET /login 200 in 40ms
+Redirecting to login: http://localhost:3001/login?redirect=%2F
+ GET /login 200 in 49ms
+ GET /login 200 in 31ms
+Redirecting to login: http://localhost:3001/login?redirect=%2Fadmin%2Fsettings
+ GET /login 200 in 34ms

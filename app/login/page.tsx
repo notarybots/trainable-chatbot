@@ -47,7 +47,9 @@ function LoginContent() {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && !loading) {
-      router.push(redirectUrl)
+      console.log('User authenticated, redirecting to:', redirectUrl)
+      // Use router.replace instead of router.push to prevent back button issues
+      router.replace(redirectUrl)
     }
   }, [user, loading, router, redirectUrl])
 
@@ -65,20 +67,41 @@ function LoginContent() {
       if (error) {
         setMessage(error.message)
         toast.error(error.message)
+        setLoading(false)
       } else {
         console.log('Sign in successful:', data)
         toast.success('Signed in successfully!')
         
-        // Wait a moment for auth state to update
-        setTimeout(() => {
-          router.push(redirectUrl)
-        }, 500)
+        // Don't set loading to false immediately - keep it true during redirect
+        // The auth state change will trigger the redirect via useEffect
+        
+        // Backup redirect with multiple attempts to ensure it works
+        const attemptRedirect = (attempt = 0) => {
+          if (attempt >= 3) {
+            // Force redirect after multiple attempts
+            window.location.href = redirectUrl
+            return
+          }
+          
+          setTimeout(() => {
+            // Check if auth state has updated
+            supabase.auth.getSession().then(({ data: { session } }) => {
+              if (session?.user) {
+                router.push(redirectUrl)
+              } else {
+                // Retry if session not ready yet
+                attemptRedirect(attempt + 1)
+              }
+            })
+          }, 300 * (attempt + 1)) // Increasing delay: 300ms, 600ms, 900ms
+        }
+        
+        attemptRedirect()
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign in failed'
       setMessage(errorMessage)
       toast.error(errorMessage)
-    } finally {
       setLoading(false)
     }
   }
@@ -97,18 +120,43 @@ function LoginContent() {
       if (error) {
         setMessage(error.message)
         toast.error(error.message)
+        setLoading(false)
       } else if (data.user && !data.user.email_confirmed_at) {
         setMessage('Check your email for the confirmation link!')
         toast.success('Check your email for the confirmation link!')
-      } else {
+        setLoading(false)
+      } else if (data.user) {
         toast.success('Account created successfully!')
-        router.push(redirectUrl)
+        
+        // Same robust redirect logic as sign in
+        const attemptRedirect = (attempt = 0) => {
+          if (attempt >= 3) {
+            // Force redirect after multiple attempts
+            window.location.href = redirectUrl
+            return
+          }
+          
+          setTimeout(() => {
+            // Check if auth state has updated
+            supabase.auth.getSession().then(({ data: { session } }) => {
+              if (session?.user) {
+                router.push(redirectUrl)
+              } else {
+                // Retry if session not ready yet
+                attemptRedirect(attempt + 1)
+              }
+            })
+          }, 300 * (attempt + 1)) // Increasing delay: 300ms, 600ms, 900ms
+        }
+        
+        attemptRedirect()
+      } else {
+        setLoading(false)
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign up failed'
       setMessage(errorMessage)
       toast.error(errorMessage)
-    } finally {
       setLoading(false)
     }
   }

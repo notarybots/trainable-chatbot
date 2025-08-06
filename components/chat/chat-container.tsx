@@ -4,13 +4,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { Message, Conversation, ChatState } from '@/lib/types';
 import { processStreamingResponse, generateSessionTitle } from '@/lib/chat-utils';
+import { useSupabase } from '@/lib/providers/supabase-provider';
 import { MessageList } from './message-list';
 import { MessageInput } from './message-input';
 import { ChatHeader } from './chat-header';
 import { SessionSidebar } from './session-sidebar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export function ChatContainer() {
+  const { isAuthenticated, loading: authLoading, user } = useSupabase();
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
@@ -18,6 +22,7 @@ export function ChatContainer() {
   const [progress, setProgress] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isAutoScrolling = useRef(true);
 
@@ -30,10 +35,14 @@ export function ChatContainer() {
     }
   };
 
-  // Load conversations on mount
+  // Load conversations on mount - but only when authenticated
   useEffect(() => {
-    loadConversations();
-  }, []);
+    if (isAuthenticated && !authLoading) {
+      loadConversations();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [isAuthenticated, authLoading]);
 
   // Enhanced scroll management
   useEffect(() => {
@@ -50,30 +59,53 @@ export function ChatContainer() {
   }, [chatState]);
 
   const loadConversations = async () => {
+    if (!isAuthenticated) {
+      console.warn('Attempted to load conversations without authentication');
+      return;
+    }
+
     try {
+      setError(null);
       const response = await fetch('/api/conversations');
       if (response.ok) {
         const data = await response.json();
         setConversations(data);
+        console.log(`Loaded ${data?.length || 0} conversations`);
+      } else if (response.status === 401) {
+        console.error('Unauthorized access to conversations');
+        toast.error('Session expired. Please sign in again.');
+        setError('Authentication required');
       } else {
-        console.error('Failed to load conversations');
+        console.error('Failed to load conversations:', response.status);
+        toast.error('Failed to load conversations');
+        setError('Failed to load conversations');
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
+      toast.error('Failed to load conversations');
+      setError('Connection error');
     } finally {
       setLoading(false);
     }
   };
 
   const loadConversation = async (conversationId: string) => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to access conversations');
+      return;
+    }
+
     try {
       const response = await fetch(`/api/conversations/${conversationId}`);
       if (response.ok) {
         const data = await response.json();
         setCurrentConversation(data);
         setMessages(data.messages || []);
+      } else if (response.status === 401) {
+        toast.error('Session expired. Please sign in again.');
       } else {
         console.error('Failed to load conversation');
+        toast.error('Failed to load conversation');
       }
     } catch (error) {
       console.error('Error loading conversation:', error);
@@ -82,6 +114,11 @@ export function ChatContainer() {
   };
 
   const createNewConversation = async (): Promise<Conversation | null> => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to create a conversation');
+      return null;
+    }
+
     try {
       const response = await fetch('/api/conversations', {
         method: 'POST',
@@ -97,7 +134,11 @@ export function ChatContainer() {
         setConversations(prev => [newConversation, ...prev]);
         setCurrentConversation(newConversation);
         setMessages([]);
+        console.log('Created new conversation:', newConversation.id);
         return newConversation;
+      } else if (response.status === 401) {
+        toast.error('Session expired. Please sign in again.');
+        return null;
       } else {
         console.error('Failed to create conversation');
         toast.error('Failed to create new conversation');
@@ -134,6 +175,11 @@ export function ChatContainer() {
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || chatState === 'processing') return;
+
+    if (!isAuthenticated) {
+      toast.error('Please sign in to send messages');
+      return;
+    }
 
     let conversation = currentConversation;
     if (!conversation) {
@@ -177,6 +223,12 @@ export function ChatContainer() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Chat API Error:', response.status, response.statusText, errorText);
+        
+        if (response.status === 401) {
+          toast.error('Session expired. Please sign in again.');
+          return;
+        }
+        
         throw new Error(`HTTP error! status: ${response.status} - ${errorText.substring(0, 200)}`);
       }
 
@@ -220,6 +272,11 @@ export function ChatContainer() {
   };
 
   const deleteConversationHandler = async (conversationId: string) => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to delete conversations');
+      return;
+    }
+
     try {
       const response = await fetch(`/api/conversations/${conversationId}`, {
         method: 'DELETE',
@@ -233,6 +290,8 @@ export function ChatContainer() {
           setChatState('idle');
         }
         toast.success('Conversation deleted');
+      } else if (response.status === 401) {
+        toast.error('Session expired. Please sign in again.');
       } else {
         toast.error('Failed to delete conversation');
       }
@@ -241,6 +300,75 @@ export function ChatContainer() {
       toast.error('Failed to delete conversation');
     }
   };
+
+  // Show authentication loading state
+  if (authLoading) {
+    return (
+      <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Checking authentication...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show unauthenticated state
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden items-center justify-center">
+        <Card className="w-full max-w-sm mx-4">
+          <CardContent className="text-center p-6">
+            <AlertCircle className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Sign In Required</h3>
+            <p className="text-gray-600 mb-4">
+              Please sign in to start chatting with the AI assistant.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Loading conversations...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden items-center justify-center">
+        <Card className="w-full max-w-sm mx-4">
+          <CardContent className="text-center p-6">
+            <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Error Loading Chat</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => {
+                setError(null);
+                loadConversations();
+              }}
+              className="text-blue-600 hover:text-blue-800"
+            >
+              Try again
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Convert conversations to legacy ChatSession format for backward compatibility
   const legacySessions = conversations.map(conv => ({
@@ -260,17 +388,6 @@ export function ChatContainer() {
     isActive: true,
     messages: messages,
   } : null;
-
-  if (loading) {
-    return (
-      <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Loading conversations...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden">
@@ -302,7 +419,7 @@ export function ChatContainer() {
         
         <MessageInput
           onSendMessage={sendMessage}
-          disabled={chatState === 'processing' || loading}
+          disabled={chatState === 'processing' || loading || !isAuthenticated}
           isLoading={chatState === 'processing'}
         />
       </div>

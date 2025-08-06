@@ -10,6 +10,7 @@ type Tenant = Database['public']['Tables']['tenants']['Row']
 type TenantContext = {
   tenant: Tenant | null
   loading: boolean
+  error: string | null
   switchTenant: (tenantId: string) => void
 }
 
@@ -22,7 +23,8 @@ export default function TenantProvider({
 }) {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [loading, setLoading] = useState(true)
-  const { supabase, user } = useSupabase()
+  const [error, setError] = useState<string | null>(null)
+  const { supabase, user, isAuthenticated, loading: authLoading } = useSupabase()
 
   const getTenantFromURL = () => {
     if (typeof window === 'undefined') return 'demo'
@@ -42,26 +44,36 @@ export default function TenantProvider({
 
   const fetchTenant = async (subdomain: string) => {
     try {
-      const { data, error } = await supabase
+      setError(null)
+      const { data, error: fetchError } = await supabase
         .from('tenants')
         .select('*')
         .eq('subdomain', subdomain)
         .single()
 
-      if (error) {
-        console.error('Error fetching tenant:', error)
+      if (fetchError) {
+        console.warn('Error fetching tenant:', fetchError)
         // Fallback to demo tenant
-        const { data: fallback } = await supabase
+        const { data: fallback, error: fallbackError } = await supabase
           .from('tenants')
           .select('*')
           .eq('subdomain', 'demo')
           .single()
-        setTenant(fallback)
+        
+        if (fallbackError) {
+          setError('Failed to load tenant configuration')
+          console.error('Error loading demo tenant:', fallbackError)
+        } else {
+          setTenant(fallback)
+          console.log('Loaded fallback tenant:', fallback?.name)
+        }
       } else {
         setTenant(data)
+        console.log('Loaded tenant:', data?.name)
       }
     } catch (error) {
       console.error('Error in fetchTenant:', error)
+      setError('Failed to load tenant configuration')
     } finally {
       setLoading(false)
     }
@@ -74,16 +86,24 @@ export default function TenantProvider({
   }
 
   useEffect(() => {
-    if (user) {
+    // Don't load tenant until auth is resolved
+    if (authLoading) {
+      return
+    }
+
+    if (isAuthenticated) {
       const tenantSubdomain = getTenantFromURL()
       fetchTenant(tenantSubdomain)
     } else {
+      // User not authenticated, clear tenant state
+      setTenant(null)
       setLoading(false)
+      setError(null)
     }
-  }, [user, supabase])
+  }, [user, isAuthenticated, authLoading, supabase])
 
   return (
-    <Context.Provider value={{ tenant, loading, switchTenant }}>
+    <Context.Provider value={{ tenant, loading, error, switchTenant }}>
       {children}
     </Context.Provider>
   )
