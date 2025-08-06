@@ -175,6 +175,101 @@ export interface Database {
           }
         ]
       }
+      tenant_embedding_settings: {
+        Row: {
+          id: string
+          tenant_id: string | null
+          model_id: string
+          model_name: string
+          provider: string
+          dimensions: number
+          is_default: boolean
+          settings: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id?: string | null
+          model_id: string
+          model_name: string
+          provider: string
+          dimensions: number
+          is_default?: boolean
+          settings?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string | null
+          model_id?: string
+          model_name?: string
+          provider?: string
+          dimensions?: number
+          is_default?: boolean
+          settings?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_embedding_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      embedding_jobs: {
+        Row: {
+          id: string
+          tenant_id: string | null
+          model_id: string
+          status: string
+          progress: number
+          total_items: number
+          processed_items: number
+          error_message: string | null
+          metadata: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id?: string | null
+          model_id: string
+          status?: string
+          progress?: number
+          total_items?: number
+          processed_items?: number
+          error_message?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string | null
+          model_id?: string
+          status?: string
+          progress?: number
+          total_items?: number
+          processed_items?: number
+          error_message?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embedding_jobs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
