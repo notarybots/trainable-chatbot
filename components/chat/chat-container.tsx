@@ -366,25 +366,16 @@ export function ChatContainer() {
     );
   }
 
-  // Show unauthenticated state
+  // Show unauthenticated state - Let route guards handle authentication
   if (!isAuthenticated) {
     return (
       <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden items-center justify-center">
-        <Card className="w-full max-w-sm mx-4">
-          <CardContent className="text-center p-6">
-            <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Sign In Required</h3>
-            <p className="text-gray-600 mb-4">
-              Please sign in to start chatting with the AI assistant.
-            </p>
-            <Button asChild className="w-full">
-              <a href="/login">
-                <Shield className="h-4 w-4 mr-2" />
-                Sign In
-              </a>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <Loader2 className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Authenticating...
+          </p>
+        </div>
       </div>
     );
   }
