@@ -1,15 +1,23 @@
-# Supabase Configuration
+
+// Run this script after getting the correct anon key
+const fs = require('fs')
+
+const newEnvContent = `# Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=https://zddulwamthwhgxdmihny.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHVsd2FtdGh3aGd4ZG1paG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MzA2MDUsImV4cCI6MjA3MDAwNjYwNX0.Lv1xPXi8TvEPwVjE0gNp9sI585w8WcLGRSP7CJeJ4rE
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ACTUAL_ANON_KEY_HERE
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHVsd2FtdGh3aGd4ZG1paG55Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDQzMDYwNSwiZXhwIjoyMDcwMDA2NjA1fQ.Yw_L7uJZCB7TTsYIvkMPEYRRf3rcQbXt-IVBOnjQ2Aw
 
 # Multi-tenant Configuration
 NEXT_PUBLIC_APP_DOMAIN=trainable-chatbot-b5rf29dwrm-notarybots-projects.vercel.app
 NEXT_PUBLIC_DEFAULT_TENANT=demo
 
-# NextAuth Configuration
+# NextAuth Configuration (not used with Supabase)
 NEXTAUTH_URL=https://trainable-chatbot-b5rf29dwrm-notarybots-projects.vercel.app
 NEXTAUTH_SECRET=kJ8mN2qR5tU7wZ9bD1gF4hL6oP3sV8xC
 
 # Abacus AI Configuration
 ABACUSAI_API_KEY=your-abacus-ai-key-here
+`
+
+fs.writeFileSync('/home/ubuntu/trainable-chatbot/.env.local', newEnvContent)
+console.log('✅ Environment file updated!')
