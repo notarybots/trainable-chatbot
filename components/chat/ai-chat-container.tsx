@@ -139,15 +139,24 @@ export function AIChatContainer() {
                 if (parsed.status === 'processing') {
                   // Just continue processing, no specific action needed
                   console.log('⚡ AIChatContainer: Processing...');
+                } else if (parsed.status === 'streaming') {
+                  // Handle real-time content streaming
+                  const newContent = parsed.content || '';
+                  if (newContent) {
+                    setStreamingContent(prev => prev + newContent);
+                    console.log('📡 AIChatContainer: Streaming chunk:', newContent);
+                  }
                 } else if (parsed.status === 'completed') {
+                  // Use the accumulated streaming content for the final message
+                  const finalContent = parsed.result?.content || streamingContent || 'No response received';
                   const aiMessage: SimpleMessage = {
                     id: crypto.randomUUID(),
-                    content: parsed.result?.content || parsed.result || 'No response received',
+                    content: finalContent,
                     role: 'assistant',
                     timestamp: new Date().toISOString(),
                   };
                   
-                  console.log('✅ AIChatContainer: AI response completed:', aiMessage.content.substring(0, 50));
+                  console.log('✅ AIChatContainer: AI response completed:', finalContent.substring(0, 50));
                   
                   setMessages(prev => [...prev, aiMessage]);
                   setIsStreaming(false);

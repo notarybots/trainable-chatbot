@@ -198,14 +198,21 @@ export async function POST(request: NextRequest) {
                   const content = parsed.choices?.[0]?.delta?.content || '';
                   if (content) {
                     buffer += content;
+                    
+                    // Send the actual content chunk for streaming
+                    const contentData = JSON.stringify({
+                      status: 'streaming',
+                      content: content
+                    });
+                    controller.enqueue(encoder.encode(`data: ${contentData}\n\n`));
+                  } else {
+                    // Send progress update when no content
+                    const progressData = JSON.stringify({
+                      status: 'processing',
+                      message: 'Generating response...'
+                    });
+                    controller.enqueue(encoder.encode(`data: ${progressData}\n\n`));
                   }
-
-                  // Send progress update
-                  const progressData = JSON.stringify({
-                    status: 'processing',
-                    message: 'Generating response...'
-                  });
-                  controller.enqueue(encoder.encode(`data: ${progressData}\n\n`));
                 } catch (e) {
                   // Skip invalid JSON
                 }
