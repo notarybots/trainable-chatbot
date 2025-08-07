@@ -163,6 +163,7 @@ export function ChatContainer() {
   };
 
   const createNewConversation = async (): Promise<Conversation | null> => {
+    console.log("New chat button clicked");
     if (!isAuthenticated || !user) {
       toast.error('Please sign in to create a conversation');
       return null;
@@ -229,6 +230,7 @@ export function ChatContainer() {
   };
 
   const sendMessage = async (content: string) => {
+    console.log("Send message called with:", content);
     if (!content.trim() || chatState === 'processing') return;
 
     if (!isAuthenticated) {
@@ -532,7 +534,7 @@ export function ChatContainer() {
         
         <MessageInput
           onSendMessage={sendMessage}
-          disabled={chatState === 'processing' || loading || !isAuthenticated || sessionError}
+          disabled={!isAuthenticated}
           isLoading={chatState === 'processing'}
         />
       </div>

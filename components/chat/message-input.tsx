@@ -15,6 +15,7 @@ export function MessageInput({ onSendMessage, disabled = false, isLoading = fals
   const [message, setMessage] = useState('');
 
   const handleSend = () => {
+    console.log("Handle send called", { message: message.trim(), disabled });
     if (!message.trim() || disabled) return;
     
     onSendMessage(message.trim());
@@ -23,6 +24,7 @@ export function MessageInput({ onSendMessage, disabled = false, isLoading = fals
 
   const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
+      console.log("Enter key pressed");
       e.preventDefault();
       handleSend();
     }
