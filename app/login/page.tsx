@@ -47,10 +47,8 @@ function LoginPageContent() {
       console.log('🔐 User authenticated, redirecting to:', destination)
       setLoading(true) // Keep loading active during redirect
       
-      // Simple redirect - let middleware and route guards handle validation
-      setTimeout(() => {
-        router.replace(destination)
-      }, 100) // Small delay to ensure auth state propagation
+      // Simple redirect to proper default path
+      router.replace(destination)
     }
   }, [isAuthenticated, authLoading, searchParams, router])
 
@@ -95,7 +93,10 @@ function LoginPageContent() {
 
   const getRedirectDestination = () => {
     const redirect = searchParams?.get('redirect')
-    return redirect && redirect !== '/login' ? redirect : 'home'
+    if (redirect && redirect !== '/login' && redirect.startsWith('/')) {
+      return redirect.replace('/', '')
+    }
+    return 'dashboard'
   }
 
   if (authLoading || (isAuthenticated && loading)) {

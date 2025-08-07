@@ -38,7 +38,7 @@ export function RouteGuard({
   const [validating, setValidating] = useState(true)
   const [sessionValidated, setSessionValidated] = useState(false)
 
-  // Simplified session validation - let middleware handle main redirects
+  // Simplified session validation - defer to middleware for authentication redirects
   useEffect(() => {
     const validateSession = async () => {
       if (loading) return
@@ -46,14 +46,7 @@ export function RouteGuard({
       setValidating(true)
 
       try {
-        // Simple validation without redirects - middleware handles auth redirects
-        if (requireAuth && !isAuthenticated) {
-          console.log('RouteGuard: User not authenticated, middleware will handle redirect')
-          setValidating(false)
-          return
-        }
-
-        // Check admin access if required
+        // Defer authentication checks to middleware - just validate admin access if needed
         if (requireAuth && adminOnly && isAuthenticated) {
           const isAdmin = user?.user_metadata?.role === 'admin' || 
                           user?.app_metadata?.role === 'admin'
@@ -65,7 +58,7 @@ export function RouteGuard({
           }
         }
 
-        // Session is valid
+        // Session validation complete
         setSessionValidated(true)
         console.log('RouteGuard: Session validation successful')
 
@@ -84,8 +77,7 @@ export function RouteGuard({
     isAuthenticated, 
     requireAuth, 
     adminOnly, 
-    router, 
-    refreshSession
+    router
   ])
 
   // Show loading state during validation

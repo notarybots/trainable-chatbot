@@ -1,7 +1,6 @@
 
 
 import { ProtectedRoute } from '@/components/auth/route-guard'
-import { SessionGuard } from '@/components/auth/session-guard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

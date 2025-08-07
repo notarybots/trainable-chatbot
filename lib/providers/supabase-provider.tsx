@@ -80,7 +80,7 @@ export default function SupabaseProvider({
             if (isMounted) {
               setLoading(false)
             }
-          }, 50) // Reduced timeout for faster loading
+          }, 10) // Minimized timeout to prevent timing race conditions
 
           console.log('✅ Auth initialized:', {
             hasSession: !!initialSession,

@@ -35,13 +35,14 @@ export function AuthGuard({
   useEffect(() => {
     if (!loading && isAuthenticated && requireAuth) {
       const redirect = searchParams?.get('redirect')
-      // Only redirect if it's a valid path and different from current location
+      // Only redirect if it's a valid path, different from current location, and properly formed
       if (redirect && redirect !== pathname && redirect !== '/login' && redirect.startsWith('/')) {
         console.log('AuthGuard: Redirecting to intended destination:', redirect)
-        // Clear the redirect param to prevent loops
-        const newUrl = new URL(window.location.href)
-        newUrl.searchParams.delete('redirect')
-        router.replace(redirect)
+        // Clean up redirect parameters and navigate
+        const newUrl = redirect
+        if (newUrl !== pathname) {
+          router.replace(newUrl)
+        }
       }
     }
   }, [loading, isAuthenticated, requireAuth, searchParams, pathname, router])
