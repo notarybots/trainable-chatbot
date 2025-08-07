@@ -5,22 +5,13 @@ $ next dev
   - Environments: .env.local, .env
 
  ✓ Starting...
- ✓ Ready in 2.2s
- ○ Compiling /middleware ...
- ✓ Compiled /middleware in 547ms (143 modules)
+ ✓ Ready in 3.5s
+ ✓ Compiled /middleware in 209ms (143 modules)
  ○ Compiling / ...
- ✓ Compiled / in 5.3s (1359 modules)
- ⨯ Error: useSupabase must be used within a SupabaseProvider
-    at useSupabase (/home/ubuntu/trainable-chatbot/.next/server/app/page.js:3398:15)
-    at Home (/home/ubuntu/trainable-chatbot/.next/server/app/page.js:348:117)
-digest: "4184778470"
- GET / 500 in 5739ms
- ✓ Compiled in 577ms (667 modules)
-<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (108kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
- ✓ Compiled in 584ms (1350 modules)
- ⨯ Error: useSupabase must be used within a SupabaseProvider
-    at useSupabase (/home/ubuntu/trainable-chatbot/.next/server/app/page.js:3390:15)
-    at Home (/home/ubuntu/trainable-chatbot/.next/server/app/page.js:348:117)
-digest: "1904440302"
- GET / 500 in 80ms
-[?25h
+ ✓ Compiled / in 4.6s (1356 modules)
+ GET / 200 in 5124ms
+ ○ Compiling /api/conversations ...
+ ✓ Compiled /api/conversations in 1118ms (1462 modules)
+ GET /api/conversations 401 in 708ms
+ GET / 200 in 81ms
+ GET / 200 in 37ms
