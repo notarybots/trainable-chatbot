@@ -3,20 +3,18 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // Only handle API routes and static files - no auth redirects
   const { pathname } = request.nextUrl
   
-  // Skip middleware for static files and API routes that don't need auth
+  // Skip middleware for static files only - NOT for API routes that need auth
   if (
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/favicon.ico') ||
-    pathname.startsWith('/api/') ||
-    pathname.includes('.')
+    pathname.includes('.') && !pathname.startsWith('/api/')
   ) {
     return NextResponse.next()
   }
 
-  // Simple session refresh for client-side auth handling
+  // Handle session refresh for both web pages AND API routes
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -42,8 +40,17 @@ export async function middleware(request: NextRequest) {
       }
     )
 
-    // Just refresh the session, don't redirect
-    await supabase.auth.getUser()
+    // Refresh the session for both web pages and API routes
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    // Log session validation for API routes (helpful for debugging)
+    if (pathname.startsWith('/api/')) {
+      console.log(`🔍 Middleware session for ${pathname}:`, {
+        user: user ? { id: user.id, email: user.email } : null,
+        error: error?.message || null
+      })
+    }
+    
   } catch (error) {
     console.error('Middleware error:', error)
   }
