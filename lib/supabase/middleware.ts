@@ -4,6 +4,34 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+  // FIRST: Clean up Vercel toolbar parameters from URLs
+  const cleanUrl = request.nextUrl.clone()
+  let hasToolbarParams = false
+  
+  // List of Vercel toolbar parameters to remove
+  const toolbarParams = [
+    '__vercel_toolbar_code',
+    '__vercel_toolbar',
+    'vercel_toolbar_code',
+    'vercel_toolbar',
+    '__vt',
+    'vt'
+  ]
+  
+  // Check and remove toolbar parameters
+  toolbarParams.forEach(param => {
+    if (cleanUrl.searchParams.has(param)) {
+      cleanUrl.searchParams.delete(param)
+      hasToolbarParams = true
+    }
+  })
+  
+  // If we removed toolbar parameters, redirect to clean URL
+  if (hasToolbarParams) {
+    console.log('🧹 Cleaning toolbar parameters from URL:', request.nextUrl.pathname)
+    return NextResponse.redirect(cleanUrl)
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })

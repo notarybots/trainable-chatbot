@@ -5,6 +5,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSupabase } from '@/lib/providers/supabase-provider'
+import { cleanCurrentUrl, getCleanSearchParams, useUrlCleanup } from '@/lib/utils/url-cleanup'
 import { PublicOnlyGuard } from '@/components/auth/auth-guard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -37,15 +38,31 @@ function LoginPageContent() {
   const { supabase, isAuthenticated, loading: authLoading } = useSupabase()
   const router = useRouter()
   const searchParams = useSearchParams()
+  
+  // Clean URL on component mount and setup automatic cleanup
+  useEffect(() => {
+    const cleanup = useUrlCleanup()
+    return cleanup
+  }, [])
+  
+  // Get clean search parameters (without toolbar params)
+  const getCleanParams = () => {
+    return getCleanSearchParams()
+  }
 
   // Simple and reliable post-authentication redirect
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      const redirect = searchParams?.get('redirect')
+      // Get clean parameters without toolbar interference
+      const cleanParams = getCleanParams()
+      const redirect = cleanParams.get('redirect')
       const destination = redirect && redirect !== '/login' ? redirect : '/'
       
       console.log('🔐 User authenticated, redirecting to:', destination)
       setLoading(true) // Keep loading active during redirect
+      
+      // Clean the URL before redirecting
+      cleanCurrentUrl()
       
       // Simple redirect to proper default path
       router.replace(destination)
@@ -92,7 +109,9 @@ function LoginPageContent() {
   }
 
   const getRedirectDestination = () => {
-    const redirect = searchParams?.get('redirect')
+    // Use clean parameters to avoid toolbar interference
+    const cleanParams = getCleanParams()
+    const redirect = cleanParams.get('redirect')
     if (redirect && redirect !== '/login' && redirect.startsWith('/')) {
       return redirect.replace('/', '')
     }
