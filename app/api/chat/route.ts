@@ -96,11 +96,14 @@ export async function POST(request: NextRequest) {
 
     // Get API key
     const apiKey = process.env.ABACUSAI_API_KEY;
+    console.log('API Key status:', apiKey ? 'Present' : 'Missing', apiKey ? `(${apiKey.length} chars)` : '');
+    
     if (!apiKey) {
+      console.error('❌ ABACUSAI_API_KEY is not configured');
       throw new Error('ABACUSAI_API_KEY is not configured');
     }
 
-    console.log('Calling Abacus.AI API...');
+    console.log('✅ Calling Abacus.AI API...');
 
     // Call the LLM API with streaming
     const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {

@@ -79,7 +79,7 @@ export function AIChatContainer() {
     }
   };
 
-  // Handle AI response streaming
+  // Handle AI response streaming - FIXED VERSION
   const handleAIResponse = async (userMessage: string, currentConversationId: string): Promise<void> => {
     console.log('🤖 AIChatContainer: Starting AI response for:', userMessage);
     
@@ -100,7 +100,9 @@ export function AIChatContainer() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ AI API error:', response.status, errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       console.log('📡 AIChatContainer: Starting to process streaming response');
@@ -113,13 +115,16 @@ export function AIChatContainer() {
       }
 
       const decoder = new TextDecoder();
-      let buffer = '';
       let partialRead = '';
+      let accumulatedContent = ''; // Track accumulated content separately
 
       try {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            console.log('📡 AIChatContainer: Stream done, checking final content');
+            break;
+          }
 
           partialRead += decoder.decode(value, { stream: true });
           let lines = partialRead.split('\n');
@@ -127,28 +132,36 @@ export function AIChatContainer() {
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
-              const data = line.slice(6);
+              const data = line.slice(6).trim();
               if (data === '[DONE]') {
-                console.log('📡 AIChatContainer: Streaming completed');
-                return;
+                console.log('📡 AIChatContainer: [DONE] signal received');
+                break;
               }
+
+              if (!data) continue; // Skip empty lines
 
               try {
                 const parsed = JSON.parse(data);
+                console.log('📦 AIChatContainer: Received chunk:', parsed.status, parsed.content?.substring(0, 30) || '');
                 
                 if (parsed.status === 'processing') {
-                  // Just continue processing, no specific action needed
-                  console.log('⚡ AIChatContainer: Processing...');
+                  console.log('⚡ AIChatContainer: Processing status received');
                 } else if (parsed.status === 'streaming') {
                   // Handle real-time content streaming
                   const newContent = parsed.content || '';
                   if (newContent) {
-                    setStreamingContent(prev => prev + newContent);
-                    console.log('📡 AIChatContainer: Streaming chunk:', newContent);
+                    accumulatedContent += newContent;
+                    setStreamingContent(accumulatedContent);
+                    console.log('📡 AIChatContainer: Accumulated content length:', accumulatedContent.length);
                   }
                 } else if (parsed.status === 'completed') {
-                  // Use the accumulated streaming content for the final message
-                  const finalContent = parsed.result?.content || streamingContent || 'No response received';
+                  // Use the result content from API, fallback to accumulated streaming content
+                  const finalContent = parsed.result?.content || accumulatedContent || 'No response received';
+                  
+                  console.log('✅ AIChatContainer: Creating final message');
+                  console.log('🎯 Final content length:', finalContent.length);
+                  console.log('📝 Final content preview:', finalContent.substring(0, 100));
+                  
                   const aiMessage: SimpleMessage = {
                     id: crypto.randomUUID(),
                     content: finalContent,
@@ -156,21 +169,41 @@ export function AIChatContainer() {
                     timestamp: new Date().toISOString(),
                   };
                   
-                  console.log('✅ AIChatContainer: AI response completed:', finalContent.substring(0, 50));
-                  
                   setMessages(prev => [...prev, aiMessage]);
                   setIsStreaming(false);
                   setStreamingContent('');
+                  
+                  console.log('✅ AIChatContainer: AI message added to conversation');
                   return;
                 } else if (parsed.status === 'error') {
+                  console.error('❌ AIChatContainer: API error:', parsed.error);
                   throw new Error(parsed.error || 'AI generation failed');
                 }
               } catch (e) {
-                console.log('⚠️ AIChatContainer: Skipping invalid JSON in stream');
+                console.log('⚠️ AIChatContainer: Skipping invalid JSON:', data.substring(0, 50));
               }
             }
           }
         }
+
+        // If we get here and have accumulated content but no completion signal
+        if (accumulatedContent) {
+          console.log('🔧 AIChatContainer: Stream ended with content, creating message');
+          const aiMessage: SimpleMessage = {
+            id: crypto.randomUUID(),
+            content: accumulatedContent,
+            role: 'assistant',
+            timestamp: new Date().toISOString(),
+          };
+          
+          setMessages(prev => [...prev, aiMessage]);
+          setIsStreaming(false);
+          setStreamingContent('');
+          return;
+        }
+        
+        throw new Error('No response content received from AI');
+        
       } catch (error) {
         console.error('❌ AIChatContainer: Stream processing error:', error);
         throw error;
@@ -178,20 +211,20 @@ export function AIChatContainer() {
     } catch (error) {
       console.error('❌ AIChatContainer: AI response error:', error);
       
-      // Fallback to echo response if AI fails
-      console.log('🔄 AIChatContainer: Falling back to echo response');
-      const fallbackMessage: SimpleMessage = {
+      // Create error message instead of echo response
+      console.log('🔄 AIChatContainer: Creating error response');
+      const errorMessage: SimpleMessage = {
         id: crypto.randomUUID(),
-        content: `I apologize, but I encountered an error. Here's what you said: "${userMessage}"`,
+        content: `I apologize, but I encountered an error while processing your request: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
         role: 'assistant',
         timestamp: new Date().toISOString(),
       };
       
-      setMessages(prev => [...prev, fallbackMessage]);
+      setMessages(prev => [...prev, errorMessage]);
       setIsStreaming(false);
       setStreamingContent('');
       
-      throw error; // Re-throw for error handling in calling function
+      // Don't re-throw - handle error gracefully
     }
   };
 
