@@ -1,17 +1,10 @@
 
-'use client'
-
-import React from 'react'
-import { SafeSupabaseWrapper } from '@/components/auth/safe-supabase-wrapper'
-import { DashboardContent } from './dashboard-content'
-
-// Force dynamic rendering  
-export const dynamic = 'force-dynamic'
+import { ImprovedChatContainer } from '@/components/chat/improved-chat-container';
 
 export default function DashboardPage() {
   return (
-    <SafeSupabaseWrapper>
-      <DashboardContent />
-    </SafeSupabaseWrapper>
-  )
+    <div className="h-full">
+      <ImprovedChatContainer />
+    </div>
+  );
 }

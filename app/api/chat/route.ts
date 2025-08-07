@@ -1,4 +1,5 @@
 
+
 export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
@@ -23,6 +24,12 @@ export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json();
     const { messages, conversationId, model = 'gpt-4.1-mini', temperature = 0.7, maxTokens = 3000 } = body;
+
+    console.log('Chat API called with:', { 
+      messageCount: messages?.length,
+      conversationId,
+      model 
+    });
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: 'Messages are required' }), {
@@ -65,12 +72,18 @@ export async function POST(request: NextRequest) {
     // Save the user message to database
     const lastUserMessage = messages[messages.length - 1];
     if (lastUserMessage && lastUserMessage.role === 'user') {
-      await createMessage({
-        conversation_id: conversationId,
-        role: lastUserMessage.role,
-        content: lastUserMessage.content,
-        metadata: { model, temperature },
-      });
+      try {
+        await createMessage({
+          conversation_id: conversationId,
+          role: lastUserMessage.role,
+          content: lastUserMessage.content,
+          metadata: { model, temperature },
+        });
+        console.log('Saved user message to database');
+      } catch (error) {
+        console.error('Failed to save user message:', error);
+        // Continue anyway - don't block the chat
+      }
     }
 
     // Add system message for chatbot context
@@ -81,28 +94,13 @@ export async function POST(request: NextRequest) {
 
     const apiMessages = [systemMessage, ...messages];
 
-    // Get API key - fallback to app/.env if main env var is placeholder
-    let apiKey = process.env.ABACUSAI_API_KEY;
-    if (!apiKey || apiKey.includes('your-abacus-ai-key-here')) {
-      // Try reading from app/.env file directly
-      const fs = require('fs');
-      const path = require('path');
-      try {
-        const appEnvPath = path.join(process.cwd(), 'app', '.env');
-        const appEnvContent = fs.readFileSync(appEnvPath, 'utf8');
-        const match = appEnvContent.match(/ABACUSAI_API_KEY="?([^"\n]+)"?/);
-        if (match && match[1]) {
-          apiKey = match[1];
-          console.log('Using API key from app/.env file');
-        }
-      } catch (error) {
-        console.error('Failed to read app/.env file:', error instanceof Error ? error.message : 'Unknown error');
-      }
+    // Get API key
+    const apiKey = process.env.ABACUSAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('ABACUSAI_API_KEY is not configured');
     }
 
-    if (!apiKey || apiKey.includes('your-abacus-ai-key-here')) {
-      throw new Error('ABACUSAI_API_KEY is not properly configured');
-    }
+    console.log('Calling Abacus.AI API...');
 
     // Call the LLM API with streaming
     const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {
@@ -121,8 +119,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('LLM API error:', response.status, response.statusText, errorText);
       throw new Error(`LLM API error: ${response.status} ${response.statusText}`);
     }
+
+    console.log('Abacus.AI API response received, starting stream...');
 
     // Create streaming response
     const stream = new ReadableStream({
@@ -153,22 +155,28 @@ export async function POST(request: NextRequest) {
                 if (data === '[DONE]') {
                   // Save assistant response to database
                   if (buffer.trim()) {
-                    await createMessage({
-                      conversation_id: conversationId,
-                      role: 'assistant',
-                      content: buffer,
-                      metadata: { 
-                        model, 
-                        temperature, 
-                        tokens: buffer.split(' ').length,
-                        timestamp: new Date().toISOString()
-                      },
-                    });
+                    try {
+                      await createMessage({
+                        conversation_id: conversationId,
+                        role: 'assistant',
+                        content: buffer,
+                        metadata: { 
+                          model, 
+                          temperature, 
+                          tokens: buffer.split(' ').length,
+                          timestamp: new Date().toISOString()
+                        },
+                      });
 
-                    // Update conversation updated_at
-                    await updateConversation(conversationId, tenantUser.tenant_id, {
-                      updated_at: new Date().toISOString()
-                    });
+                      // Update conversation updated_at
+                      await updateConversation(conversationId, tenantUser.tenant_id, {
+                        updated_at: new Date().toISOString()
+                      });
+
+                      console.log('Saved assistant response to database');
+                    } catch (error) {
+                      console.error('Failed to save assistant message:', error);
+                    }
                   }
 
                   // Send final result
