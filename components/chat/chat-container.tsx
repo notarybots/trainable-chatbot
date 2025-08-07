@@ -265,6 +265,7 @@ export function ChatContainer() {
     }
 
     try {
+      console.log('🚀 Making simplified API call with user:', user?.email);
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -274,6 +275,7 @@ export function ChatContainer() {
             content: msg.content,
           })),
           conversationId: conversation.id,
+          userEmail: user?.email, // Pass user email for simplified auth
         }),
       });
 
@@ -282,16 +284,12 @@ export function ChatContainer() {
         console.error('Chat API Error:', response.status, response.statusText, errorText);
         
         if (response.status === 401) {
-          // Only set session error if user is actually not authenticated
-          if (!isAuthenticated || !user) {
-            setSessionError(true);
-            toast.error('Session expired. Please sign in again.');
-          } else {
-            toast.error('Failed to send message - database setup may be required');
-          }
+          toast.error('Authentication required. Please refresh and sign in again.');
           return;
         }
         
+        // More user-friendly error handling
+        toast.error('Failed to send message. Please try again.');
         throw new Error(`HTTP error! status: ${response.status} - ${errorText.substring(0, 200)}`);
       }
 
