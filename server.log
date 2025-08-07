@@ -1,53 +1,22 @@
-
-> dev
-> next dev
-
+yarn run v1.22.22
+$ next dev
   ▲ Next.js 14.2.28
   - Local:        http://localhost:3000
   - Environments: .env.local, .env
 
  ✓ Starting...
- ✓ Ready in 3.7s
- ✓ Compiled /middleware in 344ms (144 modules)
-Unauthenticated user accessing: / { error: 'Auth session missing!' }
-Middleware redirecting to login with intended destination: /
-Unauthenticated user accessing: / { error: 'Auth session missing!' }
-Middleware redirecting to login with intended destination: /
+ ✓ Ready in 2.9s
+ ✓ Compiled /middleware in 230ms (144 modules)
 Unauthenticated user accessing: /login { error: 'Auth session missing!' }
  ○ Compiling /login ...
- ✓ Compiled /login in 6.1s (941 modules)
- GET /login 200 in 6550ms
-Unauthenticated user accessing: /api/conversations { error: 'Auth session missing!' }
-Unauthenticated user accessing: /admin/settings { error: 'Auth session missing!' }
-Middleware redirecting to login with intended destination: /admin/settings
- ✓ Compiled in 611ms (457 modules)
+ ✓ Compiled /login in 3.3s (777 modules)
+ GET /login 200 in 3707ms
+ ✓ Compiled in 518ms (379 modules)
 Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- GET /login 200 in 50ms
-Unauthenticated user accessing: /admin/settings { error: 'Auth session missing!' }
-Middleware redirecting to login with intended destination: /admin/settings
+ GET /login 200 in 47ms
 Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- GET /login 200 in 42ms
-Unauthenticated user accessing: /auth/auth-code-error { error: 'Auth session missing!' }
- ○ Compiling /auth/auth-code-error ...
- ✓ Compiled /auth/auth-code-error in 2.6s (926 modules)
- GET /auth/auth-code-error 200 in 2672ms
+ GET /login 200 in 44ms
 Unauthenticated user accessing: / { error: 'Auth session missing!' }
 Middleware redirecting to login with intended destination: /
 Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- GET /login 200 in 40ms
-Unauthenticated user accessing: /admin/settings { error: 'Auth session missing!' }
-Middleware redirecting to login with intended destination: /admin/settings
-Unauthenticated user accessing: /non-existent-route { error: 'Auth session missing!' }
- ✓ Compiled /_not-found in 293ms (929 modules)
- GET /non-existent-route 404 in 369ms
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- GET /login 200 in 42ms
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- GET /login 200 in 35ms
-Unauthenticated user accessing: / { error: 'Auth session missing!' }
-Middleware redirecting to login with intended destination: /
-Unauthenticated user accessing: /admin/settings { error: 'Auth session missing!' }
-Middleware redirecting to login with intended destination: /admin/settings
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- HEAD /login 200 in 41ms
-[?25h
+ GET /login 200 in 36ms

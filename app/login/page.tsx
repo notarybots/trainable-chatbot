@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSupabase } from '@/lib/providers/supabase-provider'
 import { cleanCurrentUrl, getCleanSearchParams, useUrlCleanup } from '@/lib/utils/url-cleanup'
@@ -23,22 +23,37 @@ import {
   UserPlus, 
   Loader2,
   AlertCircle,
-  ArrowRight
+  ArrowRight,
+  CheckCircle,
+  Clock
 } from 'lucide-react'
 import Link from 'next/link'
+
+type AuthState = 'idle' | 'loading' | 'success' | 'email-confirmation' | 'redirecting' | 'error'
 
 function LoginPageContent() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('john@doe.com') // Pre-filled for demo
   const [password, setPassword] = useState('johndoe123') // Pre-filled for demo
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [authState, setAuthState] = useState<AuthState>('idle')
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const timeoutRef = useRef<NodeJS.Timeout>()
+  const redirectTimeoutRef = useRef<NodeJS.Timeout>()
   
   const { supabase, isAuthenticated, loading: authLoading } = useSupabase()
   const router = useRouter()
   const searchParams = useSearchParams()
   
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current)
+    }
+  }, [])
+
   // Clean URL on component mount and setup automatic cleanup
   useEffect(() => {
     const cleanup = useUrlCleanup()
@@ -50,33 +65,61 @@ function LoginPageContent() {
     return getCleanSearchParams()
   }
 
-  // Simple and reliable post-authentication redirect
+  // Handle post-authentication redirect with proper state management
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      // Get clean parameters without toolbar interference
-      const cleanParams = getCleanParams()
-      const redirect = cleanParams.get('redirect')
-      const destination = redirect && redirect !== '/login' ? redirect : '/'
+    if (!authLoading && isAuthenticated && authState !== 'redirecting') {
+      console.log('🔐 User authenticated, preparing redirect...')
+      setAuthState('redirecting')
+      setSuccessMessage('Welcome! Taking you to the app...')
       
-      console.log('🔐 User authenticated, redirecting to:', destination)
-      setLoading(true) // Keep loading active during redirect
+      // Clear any existing timeouts
+      if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current)
       
-      // Clean the URL before redirecting
-      cleanCurrentUrl()
-      
-      // Simple redirect to proper default path
-      router.replace(destination)
+      // Add small delay to show success message, then redirect
+      redirectTimeoutRef.current = setTimeout(() => {
+        const cleanParams = getCleanParams()
+        const redirect = cleanParams.get('redirect')
+        const destination = redirect && redirect !== '/login' ? redirect : '/'
+        
+        console.log('🔐 Redirecting to:', destination)
+        cleanCurrentUrl()
+        router.replace(destination)
+      }, 1500) // Show success message for 1.5 seconds
     }
-  }, [isAuthenticated, authLoading, searchParams, router])
+  }, [isAuthenticated, authLoading, authState, router])
+
+  const resetTimeout = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = undefined
+    }
+  }
+
+  const isFormDisabled = () => {
+    return authState === 'loading' || authState === 'success' || authState === 'redirecting'
+  }
+
+  const canToggleMode = () => {
+    return authState === 'idle' || authState === 'error'
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
+    setSuccessMessage('')
+    setAuthState('loading')
+
+    // Set a timeout to prevent infinite loading states
+    resetTimeout()
+    timeoutRef.current = setTimeout(() => {
+      console.warn('⏰ Authentication timeout after 15 seconds')
+      setAuthState('error')
+      setError('Authentication is taking longer than expected. Please try again.')
+    }, 15000) // 15 second timeout
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -86,25 +129,53 @@ function LoginPageContent() {
           }
         })
 
+        resetTimeout() // Clear the timeout on success
+
         if (error) throw error
+
+        console.log('✅ Sign-up successful:', { needsConfirmation: !data.session })
         
-        console.log('✅ Sign-up successful, auth state will handle redirect')
+        if (data.session) {
+          // User is immediately authenticated (e.g., email confirmation disabled)
+          setAuthState('success')
+          setSuccessMessage('Account created successfully!')
+        } else {
+          // Email confirmation required
+          setAuthState('email-confirmation')
+          setSuccessMessage('Account created! Please check your email for a confirmation link.')
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
 
+        resetTimeout() // Clear the timeout on success
+
         if (error) throw error
         
-        console.log('✅ Sign-in successful, auth state will handle redirect')
+        console.log('✅ Sign-in successful')
+        setAuthState('success')
+        setSuccessMessage('Welcome back! Signing you in...')
       }
-
-      // Don't set loading to false here - keep it active during auth state change
     } catch (error: any) {
       console.error('Auth error:', error)
-      setError(error.message || 'Authentication failed')
-      setLoading(false)
+      resetTimeout()
+      setAuthState('error')
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Authentication failed'
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.'
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = 'Please check your email and click the confirmation link before signing in.'
+      } else if (error.message?.includes('User already registered')) {
+        errorMessage = 'This email is already registered. Please sign in instead.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      setError(errorMessage)
     }
   }
 
@@ -118,7 +189,8 @@ function LoginPageContent() {
     return 'dashboard'
   }
 
-  if (authLoading || (isAuthenticated && loading)) {
+  // Show loading state while checking auth or during redirect
+  if (authLoading || authState === 'redirecting') {
     return (
       <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
@@ -126,12 +198,14 @@ function LoginPageContent() {
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">
-                {isAuthenticated ? 'Redirecting...' : 'Loading...'}
+                {authState === 'redirecting' ? 'Redirecting...' : 'Loading...'}
               </h3>
               <p className="text-gray-600">
-                {isAuthenticated 
-                  ? `Taking you to your ${getRedirectDestination()}...`
-                  : 'Checking your authentication status...'
+                {authState === 'redirecting' && successMessage
+                  ? successMessage
+                  : authLoading 
+                    ? 'Checking your authentication status...'
+                    : `Taking you to your ${getRedirectDestination()}...`
                 }
               </p>
             </div>
@@ -175,7 +249,7 @@ function LoginPageContent() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
                     required
-                    disabled={loading}
+                    disabled={isFormDisabled()}
                   />
                 </div>
               </div>
@@ -193,24 +267,43 @@ function LoginPageContent() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
                     required
-                    disabled={loading}
+                    disabled={isFormDisabled()}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    disabled={loading}
+                    disabled={isFormDisabled()}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
+              {/* Success Message Display */}
+              {successMessage && (authState === 'success' || authState === 'email-confirmation') && (
+                <Alert className="border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
+                </Alert>
+              )}
+
               {/* Error Display */}
-              {error && (
+              {error && authState === 'error' && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* Email Confirmation Info */}
+              {authState === 'email-confirmation' && (
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    A confirmation email has been sent to <strong>{email}</strong>. 
+                    Please check your email and click the confirmation link to complete your account setup.
+                  </AlertDescription>
                 </Alert>
               )}
 
@@ -218,12 +311,22 @@ function LoginPageContent() {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={loading}
+                disabled={authState === 'loading' || authState === 'success' || authState === 'email-confirmation'}
               >
-                {loading ? (
+                {authState === 'loading' ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     {isSignUp ? 'Creating Account...' : 'Signing In...'}
+                  </>
+                ) : authState === 'success' ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                    {isSignUp ? 'Account Created!' : 'Signed In!'}
+                  </>
+                ) : authState === 'email-confirmation' ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Check Your Email
                   </>
                 ) : (
                   <>
@@ -233,25 +336,45 @@ function LoginPageContent() {
                   </>
                 )}
               </Button>
+
+              {/* Try Again Button for Email Confirmation */}
+              {authState === 'email-confirmation' && (
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setAuthState('idle')
+                    setSuccessMessage('')
+                    setIsSignUp(false) // Switch to sign-in mode
+                  }}
+                  className="w-full mt-2"
+                >
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  I've confirmed my email, sign me in
+                </Button>
+              )}
             </form>
 
             {/* Toggle Mode */}
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-              </p>
-              <Button
-                variant="link"
-                onClick={() => {
-                  setIsSignUp(!isSignUp)
-                  setError('')
-                }}
-                disabled={loading}
-                className="p-0 h-auto font-medium"
-              >
-                {isSignUp ? 'Sign in here' : 'Create one here'}
-              </Button>
-            </div>
+            {canToggleMode() && (
+              <div className="mt-6 text-center">
+                <p className="text-gray-600">
+                  {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+                </p>
+                <Button
+                  variant="link"
+                  onClick={() => {
+                    setIsSignUp(!isSignUp)
+                    setError('')
+                    setSuccessMessage('')
+                    setAuthState('idle')
+                  }}
+                  disabled={!canToggleMode()}
+                  className="p-0 h-auto font-medium"
+                >
+                  {isSignUp ? 'Sign in here' : 'Create one here'}
+                </Button>
+              </div>
+            )}
 
             {/* Demo Credentials Notice */}
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">

@@ -159,25 +159,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && isAuthPage) {
-    // User is authenticated but on auth page - redirect appropriately
-    const redirectUrl = url.clone()
-    
-    // Check if there's an intended destination from the redirect parameter
-    const intendedDestination = request.nextUrl.searchParams.get('redirect')
-    
-    if (intendedDestination && intendedDestination !== '/login') {
-      // Redirect to intended destination
-      redirectUrl.pathname = intendedDestination
-      redirectUrl.search = ''
-      console.log('Redirecting authenticated user to intended destination:', intendedDestination)
-    } else {
-      // Default redirect to home
-      redirectUrl.pathname = '/'
-      redirectUrl.search = ''
-      console.log('Redirecting authenticated user to home')
-    }
-    
-    return NextResponse.redirect(redirectUrl)
+    // User is authenticated but on auth page - let client handle the redirect
+    // This prevents conflicts between middleware and client-side authentication
+    console.log('Authenticated user on auth page - allowing client-side redirect handling')
   }
 
   // Handle session refresh and persistence

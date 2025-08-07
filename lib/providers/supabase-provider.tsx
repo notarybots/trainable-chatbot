@@ -135,10 +135,13 @@ export default function SupabaseProvider({
             setLoading(false)
             console.log('✅ User signed in successfully')
             
-            // Minimal delay to ensure state propagation before any redirects
-            setTimeout(() => {
-              console.log('🔄 Auth state propagated after sign-in')
-            }, 10)
+            // Ensure state is updated immediately for better UX
+            if (currentSession?.user) {
+              console.log('🔄 Auth state propagated after sign-in:', {
+                userId: currentSession.user.id,
+                email: currentSession.user.email
+              })
+            }
             break
 
           case 'SIGNED_OUT':
