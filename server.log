@@ -1,26 +1,18 @@
-yarn run v1.22.22
-$ next dev
+
+> dev
+> next dev
+
   ▲ Next.js 14.2.28
   - Local:        http://localhost:3000
-  - Environments: .env.local, .env
+  - Environments: .env.development.local, .env.local, .env
 
  ✓ Starting...
- ✓ Ready in 3.5s
- ✓ Compiled /middleware in 209ms (143 modules)
+ ✓ Ready in 2.5s
+ ✓ Compiled /middleware in 245ms (143 modules)
  ○ Compiling / ...
- ✓ Compiled / in 4.6s (1356 modules)
- GET / 200 in 5124ms
- ○ Compiling /api/conversations ...
- ✓ Compiled /api/conversations in 1118ms (1462 modules)
- GET /api/conversations 401 in 708ms
- GET / 200 in 81ms
- GET / 200 in 37ms
- ✓ Compiled in 784ms (1356 modules)
- ✓ Compiled in 476ms (1356 modules)
- ✓ Compiled in 466ms (1356 modules)
- ✓ Compiled in 434ms (1356 modules)
- ✓ Compiled in 510ms (1356 modules)
- ✓ Compiled in 416ms (1356 modules)
- ✓ Compiled in 539ms (1356 modules)
- ✓ Compiled in 585ms (1356 modules)
-[?25h
+ ✓ Compiled / in 3s (1335 modules)
+ GET / 200 in 3478ms
+ ✓ Compiled in 530ms (669 modules)
+ GET / 200 in 52ms
+ ✓ Compiled in 376ms (669 modules)
+ GET / 200 in 44ms

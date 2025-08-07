@@ -81,12 +81,35 @@ export async function POST(request: NextRequest) {
 
     const apiMessages = [systemMessage, ...messages];
 
+    // Get API key - fallback to app/.env if main env var is placeholder
+    let apiKey = process.env.ABACUSAI_API_KEY;
+    if (!apiKey || apiKey.includes('your-abacus-ai-key-here')) {
+      // Try reading from app/.env file directly
+      const fs = require('fs');
+      const path = require('path');
+      try {
+        const appEnvPath = path.join(process.cwd(), 'app', '.env');
+        const appEnvContent = fs.readFileSync(appEnvPath, 'utf8');
+        const match = appEnvContent.match(/ABACUSAI_API_KEY="?([^"\n]+)"?/);
+        if (match && match[1]) {
+          apiKey = match[1];
+          console.log('Using API key from app/.env file');
+        }
+      } catch (error) {
+        console.error('Failed to read app/.env file:', error instanceof Error ? error.message : 'Unknown error');
+      }
+    }
+
+    if (!apiKey || apiKey.includes('your-abacus-ai-key-here')) {
+      throw new Error('ABACUSAI_API_KEY is not properly configured');
+    }
+
     // Call the LLM API with streaming
     const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.ABACUSAI_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model,
