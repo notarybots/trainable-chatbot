@@ -1,17 +1,18 @@
 yarn run v1.22.22
 $ next dev
+ ⚠ Port 3000 is in use, trying 3001 instead.
   ▲ Next.js 14.2.28
-  - Local:        http://localhost:3000
-  - Environments: .env.development.local, .env.local, .env
+  - Local:        http://localhost:3001
+  - Environments: .env.development.local, .env
 
  ✓ Starting...
- ✓ Ready in 3.1s
- ✓ Compiled /middleware in 236ms (143 modules)
+ ✓ Ready in 3.3s
+ ✓ Compiled /middleware in 299ms (143 modules)
+ ○ Compiling /api/chat ...
+ ✓ Compiled /api/chat in 552ms (129 modules)
+Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }
+ POST /api/chat 401 in 778ms
  ○ Compiling / ...
- ✓ Compiled / in 3.9s (1335 modules)
- GET / 200 in 4334ms
- ✓ Compiled in 554ms (669 modules)
- ○ Compiling /api/conversations ...
  ⚠ ./node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
 Critical dependency: the request of a dependency is an expression
 
@@ -22,10 +23,8 @@ Import trace for requested module:
 ./node_modules/@supabase/ssr/dist/module/createBrowserClient.js
 ./node_modules/@supabase/ssr/dist/module/index.js
 ./lib/supabase/server.ts
-./app/api/conversations/route.ts
- GET /api/conversations 401 in 806ms
- GET / 200 in 96ms
- GET /api/conversations 401 in 24ms
+./app/api/chat/route.ts
+ GET / 200 in 4561ms
  ⚠ ./node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
 Critical dependency: the request of a dependency is an expression
 
@@ -36,7 +35,7 @@ Import trace for requested module:
 ./node_modules/@supabase/ssr/dist/module/createBrowserClient.js
 ./node_modules/@supabase/ssr/dist/module/index.js
 ./lib/supabase/server.ts
-./app/api/conversations/route.ts
+./app/api/chat/route.ts
  ⚠ ./node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
 Critical dependency: the request of a dependency is an expression
 
@@ -47,11 +46,7 @@ Import trace for requested module:
 ./node_modules/@supabase/ssr/dist/module/createBrowserClient.js
 ./node_modules/@supabase/ssr/dist/module/index.js
 ./lib/supabase/server.ts
-./app/api/conversations/route.ts
- POST /api/chat 401 in 281ms
- GET / 200 in 49ms
- POST /api/conversations 401 in 51ms
- POST /api/chat 401 in 25ms
+./app/api/chat/route.ts
  ⚠ ./node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
 Critical dependency: the request of a dependency is an expression
 
@@ -62,5 +57,8 @@ Import trace for requested module:
 ./node_modules/@supabase/ssr/dist/module/createBrowserClient.js
 ./node_modules/@supabase/ssr/dist/module/index.js
 ./lib/supabase/server.ts
-./app/api/conversations/route.ts
-[?25h
+./app/api/chat/route.ts
+ GET /dashboard 200 in 818ms
+Chat API called with: { messageCount: 1, conversationId: 'test-id', model: 'gpt-4.1-mini' }
+ POST /api/chat 401 in 44ms
+ GET / 200 in 52ms
