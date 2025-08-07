@@ -1,14 +1,14 @@
+
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import Providers from '@/components/providers'
-import { AuthProvider } from '@/lib/providers/simple-auth-provider'
+import { Providers } from '@/components/providers'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Trainable Chatbot',
-  description: 'AI-powered conversational assistant',
+  title: 'AI Chatbot - Multi-Tenant Conversational AI',
+  description: 'Intelligent conversations powered by advanced AI technology',
 }
 
 export default function RootLayout({
@@ -17,13 +17,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} antialiased`}>
-        <AuthProvider>
-          <Providers>
-            {children}
-          </Providers>
-        </AuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

@@ -5,37 +5,22 @@ $ next dev
   - Environments: .env.local, .env
 
  ✓ Starting...
- ✓ Ready in 2.9s
- ✓ Compiled /middleware in 230ms (144 modules)
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- ○ Compiling /login ...
- ✓ Compiled /login in 3.3s (777 modules)
- GET /login 200 in 3707ms
- ✓ Compiled in 518ms (379 modules)
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- GET /login 200 in 47ms
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- GET /login 200 in 44ms
-Unauthenticated user accessing: / { error: 'Auth session missing!' }
-Middleware redirecting to login with intended destination: /
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- GET /login 200 in 36ms
- ✓ Compiled in 676ms (777 modules)
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- ✓ Compiled in 460ms (777 modules)
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- ✓ Compiled in 453ms (777 modules)
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- ✓ Compiled in 424ms (777 modules)
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- ✓ Compiled in 172ms (144 modules)
- ✓ Compiled in 833ms (777 modules)
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- ✓ Compiled in 454ms (777 modules)
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- ✓ Compiled in 290ms (379 modules)
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
- ✓ Compiled in 607ms (909 modules)
-Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ ✓ Ready in 2.2s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 547ms (143 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 5.3s (1359 modules)
+ ⨯ Error: useSupabase must be used within a SupabaseProvider
+    at useSupabase (/home/ubuntu/trainable-chatbot/.next/server/app/page.js:3398:15)
+    at Home (/home/ubuntu/trainable-chatbot/.next/server/app/page.js:348:117)
+digest: "4184778470"
+ GET / 500 in 5739ms
+ ✓ Compiled in 577ms (667 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (108kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled in 584ms (1350 modules)
+ ⨯ Error: useSupabase must be used within a SupabaseProvider
+    at useSupabase (/home/ubuntu/trainable-chatbot/.next/server/app/page.js:3390:15)
+    at Home (/home/ubuntu/trainable-chatbot/.next/server/app/page.js:348:117)
+digest: "1904440302"
+ GET / 500 in 80ms
 [?25h
