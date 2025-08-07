@@ -20,3 +20,22 @@ Unauthenticated user accessing: / { error: 'Auth session missing!' }
 Middleware redirecting to login with intended destination: /
 Unauthenticated user accessing: /login { error: 'Auth session missing!' }
  GET /login 200 in 36ms
+ ✓ Compiled in 676ms (777 modules)
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ ✓ Compiled in 460ms (777 modules)
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ ✓ Compiled in 453ms (777 modules)
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ ✓ Compiled in 424ms (777 modules)
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ ✓ Compiled in 172ms (144 modules)
+ ✓ Compiled in 833ms (777 modules)
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ ✓ Compiled in 454ms (777 modules)
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ ✓ Compiled in 290ms (379 modules)
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+ ✓ Compiled in 607ms (909 modules)
+Unauthenticated user accessing: /login { error: 'Auth session missing!' }
+[?25h

@@ -31,17 +31,38 @@ export function AuthGuard({
   const searchParams = useSearchParams()
   const [refreshing, setRefreshing] = useState(false)
 
-  // Handle intended destination after authentication (prevent infinite redirects)
+  // Handle intended destination after authentication with loop prevention
   useEffect(() => {
     if (!loading && isAuthenticated && requireAuth) {
       const redirect = searchParams?.get('redirect')
-      // Only redirect if it's a valid path, different from current location, and properly formed
-      if (redirect && redirect !== pathname && redirect !== '/login' && redirect.startsWith('/')) {
-        console.log('AuthGuard: Redirecting to intended destination:', redirect)
-        // Clean up redirect parameters and navigate
-        const newUrl = redirect
-        if (newUrl !== pathname) {
-          router.replace(newUrl)
+      
+      // Validate redirect parameter
+      if (redirect) {
+        try {
+          const decodedRedirect = decodeURIComponent(redirect)
+          
+          // Enhanced validation to prevent redirect loops
+          const isValidRedirect = (
+            decodedRedirect !== pathname &&
+            decodedRedirect !== '/login' &&
+            decodedRedirect !== '/auth' &&
+            decodedRedirect.startsWith('/') &&
+            !decodedRedirect.includes('..') // Path traversal protection
+          )
+          
+          if (isValidRedirect) {
+            console.log('AuthGuard: Redirecting to intended destination:', decodedRedirect)
+            
+            // Special handling for root path - redirect to dashboard instead
+            const finalDestination = decodedRedirect === '/' ? '/dashboard' : decodedRedirect
+            
+            // Use replace to avoid back button issues
+            router.replace(finalDestination)
+          } else {
+            console.warn('AuthGuard: Invalid redirect destination:', decodedRedirect)
+          }
+        } catch (error) {
+          console.error('AuthGuard: Error processing redirect parameter:', error)
         }
       }
     }
@@ -61,8 +82,20 @@ export function AuthGuard({
   const getLoginPath = () => {
     if (redirectTo) return redirectTo
     
-    // Store current path as intended destination
+    // Store current path as intended destination with loop prevention
     const currentPath = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '')
+    
+    // Don't add redirect parameter for certain paths to prevent loops
+    if (
+      pathname === '/' || 
+      pathname === '/login' || 
+      pathname === '/auth' ||
+      searchParams?.get('redirect') // Already has redirect parameter
+    ) {
+      console.log('AuthGuard: Skipping redirect parameter for path:', pathname)
+      return '/login'
+    }
+    
     return `/login?redirect=${encodeURIComponent(currentPath)}`
   }
 

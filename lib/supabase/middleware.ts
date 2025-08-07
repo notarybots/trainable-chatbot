@@ -122,7 +122,7 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route + '/')
   )
 
-  // Enhanced authentication logic
+  // Enhanced authentication logic with redirect loop prevention
   if (!user) {
     // Handle unauthenticated users (regardless of error state)
     console.log('Unauthenticated user accessing:', request.nextUrl.pathname, { error: error?.message })
@@ -145,12 +145,32 @@ export async function updateSession(request: NextRequest) {
     }
     
     if (isProtectedRoute && !isPublicRoute) {
+      // Prevent redirect loops by checking for existing redirect parameters
+      const existingRedirect = request.nextUrl.searchParams.get('redirect')
+      
       // Store intended destination for post-login redirect
       const redirectUrl = url.clone()
       redirectUrl.pathname = '/login'
       
-      // Preserve the intended destination
-      const intendedDestination = request.nextUrl.pathname + request.nextUrl.search
+      // Preserve the intended destination, but handle special cases
+      let intendedDestination = request.nextUrl.pathname + request.nextUrl.search
+      
+      // Special handling for root path to prevent loops
+      if (request.nextUrl.pathname === '/') {
+        console.log('⚠️ Middleware: Root path access detected, redirecting to login without redirect param to prevent loops')
+        // Don't add redirect parameter for root path - let client handle it
+        return NextResponse.redirect(redirectUrl)
+      }
+      
+      // Check if we're already in a redirect chain
+      if (existingRedirect) {
+        console.log('⚠️ Middleware: Redirect parameter already present, potential loop detected:', existingRedirect)
+        // Clear redirect parameter to break the loop
+        redirectUrl.searchParams.delete('redirect')
+        return NextResponse.redirect(redirectUrl)
+      }
+      
+      // Only add redirect parameter for non-root paths
       redirectUrl.searchParams.set('redirect', intendedDestination)
       
       console.log('Middleware redirecting to login with intended destination:', intendedDestination)

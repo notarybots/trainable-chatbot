@@ -31,6 +31,10 @@ import Link from 'next/link'
 
 type AuthState = 'idle' | 'loading' | 'success' | 'email-confirmation' | 'redirecting' | 'error'
 
+// Redirect loop prevention
+const MAX_REDIRECT_ATTEMPTS = 3
+const REDIRECT_HISTORY_KEY = 'auth_redirect_history'
+
 function LoginPageContent() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('john@doe.com') // Pre-filled for demo
@@ -39,6 +43,7 @@ function LoginPageContent() {
   const [authState, setAuthState] = useState<AuthState>('idle')
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [redirectAttempts, setRedirectAttempts] = useState(0)
   const timeoutRef = useRef<NodeJS.Timeout>()
   const redirectTimeoutRef = useRef<NodeJS.Timeout>()
   
@@ -60,12 +65,97 @@ function LoginPageContent() {
     return cleanup
   }, [])
   
+  // Redirect loop detection and prevention
+  const checkRedirectHistory = () => {
+    if (typeof window === 'undefined') return { canRedirect: true, history: [] }
+    
+    const historyJson = localStorage.getItem(REDIRECT_HISTORY_KEY)
+    let history: { url: string; timestamp: number }[] = []
+    
+    try {
+      history = historyJson ? JSON.parse(historyJson) : []
+    } catch (e) {
+      console.warn('Failed to parse redirect history:', e)
+      history = []
+    }
+    
+    // Clean old entries (older than 10 seconds)
+    const now = Date.now()
+    history = history.filter(entry => now - entry.timestamp < 10000)
+    
+    // Check for recent redirects to same URL
+    const currentUrl = window.location.href
+    const recentSameUrl = history.filter(entry => entry.url === currentUrl).length
+    
+    return {
+      canRedirect: recentSameUrl < MAX_REDIRECT_ATTEMPTS,
+      history,
+      attempts: recentSameUrl
+    }
+  }
+  
+  const recordRedirectAttempt = (url: string) => {
+    if (typeof window === 'undefined') return
+    
+    const { history } = checkRedirectHistory()
+    const newEntry = { url, timestamp: Date.now() }
+    const updatedHistory = [...history, newEntry]
+    
+    localStorage.setItem(REDIRECT_HISTORY_KEY, JSON.stringify(updatedHistory))
+  }
+  
+  const clearRedirectHistory = () => {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem(REDIRECT_HISTORY_KEY)
+  }
+  
   // Get clean search parameters (without toolbar params)
   const getCleanParams = () => {
     return getCleanSearchParams()
   }
+  
+  // Safe redirect parameter validation and decoding
+  const getValidRedirectDestination = () => {
+    try {
+      const cleanParams = getCleanParams()
+      const redirect = cleanParams.get('redirect')
+      
+      if (!redirect) return null
+      
+      // Decode URL-encoded redirect parameter
+      let decodedRedirect: string
+      try {
+        decodedRedirect = decodeURIComponent(redirect)
+      } catch (e) {
+        console.warn('Failed to decode redirect parameter:', redirect, e)
+        return null
+      }
+      
+      // Validate redirect destination
+      if (
+        decodedRedirect === '/login' || 
+        decodedRedirect === '/auth' || 
+        !decodedRedirect.startsWith('/') ||
+        decodedRedirect.includes('..') // Path traversal protection
+      ) {
+        console.warn('Invalid redirect destination:', decodedRedirect)
+        return null
+      }
+      
+      // Special handling for root path to prevent loops
+      if (decodedRedirect === '/') {
+        console.log('🔄 Root path redirect detected, using fallback')
+        return '/dashboard' // Fallback to dashboard instead of root
+      }
+      
+      return decodedRedirect
+    } catch (error) {
+      console.error('Error validating redirect destination:', error)
+      return null
+    }
+  }
 
-  // Handle post-authentication redirect with proper state management
+  // Handle post-authentication redirect with loop prevention
   useEffect(() => {
     if (!authLoading && isAuthenticated && authState !== 'redirecting') {
       console.log('🔐 User authenticated, preparing redirect...')
@@ -77,16 +167,53 @@ function LoginPageContent() {
       
       // Add small delay to show success message, then redirect
       redirectTimeoutRef.current = setTimeout(() => {
-        const cleanParams = getCleanParams()
-        const redirect = cleanParams.get('redirect')
-        const destination = redirect && redirect !== '/login' ? redirect : '/'
+        const { canRedirect, attempts } = checkRedirectHistory()
         
-        console.log('🔐 Redirecting to:', destination)
+        if (!canRedirect) {
+          console.warn(`🚫 Redirect loop detected (${attempts} attempts), using fallback navigation`)
+          setError('Redirect loop detected. Taking you to the dashboard instead.')
+          clearRedirectHistory()
+          
+          // Direct navigation to dashboard as fallback
+          setTimeout(() => {
+            cleanCurrentUrl()
+            router.replace('/dashboard')
+          }, 2000)
+          return
+        }
+        
+        // Get validated redirect destination
+        const validDestination = getValidRedirectDestination()
+        const fallbackDestination = '/dashboard'
+        const destination = validDestination || fallbackDestination
+        
+        console.log('🔐 Redirecting to:', destination, {
+          validDestination,
+          fallbackUsed: !validDestination,
+          attempts
+        })
+        
+        // Record redirect attempt
+        const targetUrl = window.location.origin + destination
+        recordRedirectAttempt(targetUrl)
+        
+        // Clear URL parameters and redirect
         cleanCurrentUrl()
         router.replace(destination)
       }, 1500) // Show success message for 1.5 seconds
     }
   }, [isAuthenticated, authLoading, authState, router])
+  
+  // Clear redirect history on successful authentication (prevent stale data)
+  useEffect(() => {
+    if (isAuthenticated && authState === 'success') {
+      const timer = setTimeout(() => {
+        clearRedirectHistory()
+      }, 5000) // Clear after 5 seconds of successful auth
+      
+      return () => clearTimeout(timer)
+    }
+  }, [isAuthenticated, authState])
 
   const resetTimeout = () => {
     if (timeoutRef.current) {
@@ -180,14 +307,34 @@ function LoginPageContent() {
   }
 
   const getRedirectDestination = () => {
-    // Use clean parameters to avoid toolbar interference
-    const cleanParams = getCleanParams()
-    const redirect = cleanParams.get('redirect')
-    if (redirect && redirect !== '/login' && redirect.startsWith('/')) {
-      return redirect.replace('/', '')
+    // Use validated redirect destination for display purposes
+    const validDestination = getValidRedirectDestination()
+    if (validDestination) {
+      // Remove leading slash for display (e.g., "/dashboard" -> "dashboard")
+      return validDestination.replace('/', '') || 'main app'
     }
     return 'dashboard'
   }
+  
+  // Debug information logging
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const cleanParams = getCleanParams()
+      const redirect = cleanParams.get('redirect')
+      const { canRedirect, attempts } = checkRedirectHistory()
+      
+      console.log('🔍 Login Page Debug Info:', {
+        currentUrl: window.location.href,
+        redirectParam: redirect,
+        decodedRedirect: redirect ? decodeURIComponent(redirect) : null,
+        canRedirect,
+        redirectAttempts: attempts,
+        isAuthenticated,
+        authLoading,
+        authState
+      })
+    }
+  }, [isAuthenticated, authLoading, authState])
 
   // Show loading state while checking auth or during redirect
   if (authLoading || authState === 'redirecting') {
