@@ -10,13 +10,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   // Wait for client-side hydration to complete
   useEffect(() => {
-    setMounted(true)
+    const timer = setTimeout(() => setMounted(true), 100)
+    return () => clearTimeout(timer)
   }, [])
-
-  // Prevent hydration mismatch by not rendering providers until mounted
-  if (!mounted) {
-    return <>{children}</>
-  }
 
   return (
     <ThemeProvider

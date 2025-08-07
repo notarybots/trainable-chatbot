@@ -26,10 +26,18 @@ export default function SupabaseProvider({
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isClient, setIsClient] = useState(false)
   const supabase = createClient()
+
+  // Set client flag after mount
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   // Initialize auth state - simplified
   useEffect(() => {
+    if (!isClient) return // Only run on client side
+
     let isMounted = true
 
     const getSession = async () => {
@@ -76,7 +84,7 @@ export default function SupabaseProvider({
       isMounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [isClient])
 
   const signOut = async () => {
     try {
