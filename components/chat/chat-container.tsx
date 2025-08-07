@@ -38,26 +38,49 @@ export function ChatContainer() {
     }
   };
 
-  // Enhanced session validation
+  // Enhanced session validation - less aggressive
   const validateSession = async () => {
+    // If user is authenticated, trust the authentication system
     if (!isAuthenticated) {
+      console.warn('User not authenticated')
       setSessionError(true)
       return false
     }
 
+    // If we have a valid user session, don't immediately fail on API errors
+    // API errors might be database-related, not authentication-related
     try {
       const response = await fetch('/api/conversations')
       if (response.status === 401) {
-        console.warn('Session validation failed - 401 Unauthorized')
-        setSessionError(true)
-        return false
+        // Only set session error if we get a proper 401 AND we can verify the user is null
+        console.warn('API returned 401 - checking user session')
+        
+        // Give a moment for auth state to update
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Re-check authentication state
+        if (!user) {
+          console.warn('Session validation failed - user session is null')
+          setSessionError(true)
+          return false
+        } else {
+          // User exists but API is failing - likely database issue, not auth issue
+          console.warn('API 401 but user exists - likely database/tenant issue, not auth issue')
+          setSessionError(false)
+          return true
+        }
       }
       setSessionError(false)
       return true
     } catch (error) {
       console.error('Session validation error:', error)
-      setSessionError(true)
-      return false
+      // Don't immediately set session error for network/server errors
+      // Only set it if we also don't have a user
+      if (!user) {
+        setSessionError(true)
+        return false
+      }
+      return true
     }
   }
 
@@ -88,9 +111,9 @@ export function ChatContainer() {
       return;
     }
 
-    // Validate session first
+    // Validate session first - but don't fail if API has issues but user is valid
     const sessionValid = await validateSession()
-    if (!sessionValid) {
+    if (!sessionValid && !user) {
       setError('Session expired - please refresh')
       return
     }
@@ -104,14 +127,34 @@ export function ChatContainer() {
         setConversations(data);
         console.log(`Loaded ${data?.length || 0} conversations`);
       } else if (response.status === 401) {
-        console.error('Unauthorized access to conversations');
-        setSessionError(true)
-        setError('Session expired - please sign in again');
-        toast.error('Session expired. Please sign in again.');
+        // Only treat as session error if we also don't have a user
+        if (!user) {
+          console.error('Unauthorized access to conversations and no user session');
+          setSessionError(true)
+          setError('Session expired - please sign in again');
+          toast.error('Session expired. Please sign in again.');
+        } else {
+          // User exists but API is failing - likely database/tenant setup issue
+          console.error('API 401 but user authenticated - likely database setup issue');
+          setError('Database setup required - conversations may not be available yet');
+          toast.error('Database setup required. Some features may be unavailable.');
+        }
+      } else if (response.status === 404) {
+        // Handle tenant not found error
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.error?.includes('tenant')) {
+          console.error('No tenant found for user - database setup issue');
+          setError('User setup required - please contact administrator');
+          toast.error('Account setup required. Please contact support.');
+        } else {
+          setError('Failed to load conversations');
+          toast.error('Failed to load conversations');
+        }
       } else {
         console.error('Failed to load conversations:', response.status);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        setError(`Failed to load conversations (${response.status})`);
         toast.error('Failed to load conversations');
-        setError('Failed to load conversations');
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
@@ -135,8 +178,13 @@ export function ChatContainer() {
         setCurrentConversation(data);
         setMessages(data.messages || []);
       } else if (response.status === 401) {
-        setSessionError(true)
-        toast.error('Session expired. Please sign in again.');
+        // Only set session error if user is also null
+        if (!user) {
+          setSessionError(true)
+          toast.error('Session expired. Please sign in again.');
+        } else {
+          toast.error('Access denied. Database setup may be required.');
+        }
       } else {
         console.error('Failed to load conversation');
         toast.error('Failed to load conversation');
@@ -171,8 +219,13 @@ export function ChatContainer() {
         console.log('Created new conversation:', newConversation.id);
         return newConversation;
       } else if (response.status === 401) {
-        setSessionError(true)
-        toast.error('Session expired. Please sign in again.');
+        // Only set session error if user is also null
+        if (!user) {
+          setSessionError(true)
+          toast.error('Session expired. Please sign in again.');
+        } else {
+          toast.error('Access denied. Database setup may be required.');
+        }
         return null;
       } else {
         console.error('Failed to create conversation');
@@ -260,8 +313,13 @@ export function ChatContainer() {
         console.error('Chat API Error:', response.status, response.statusText, errorText);
         
         if (response.status === 401) {
-          setSessionError(true)
-          toast.error('Session expired. Please sign in again.');
+          // Only set session error if user is also null
+          if (!user) {
+            setSessionError(true)
+            toast.error('Session expired. Please sign in again.');
+          } else {
+            toast.error('Access denied. Database setup may be required.');
+          }
           return;
         }
         
@@ -327,8 +385,13 @@ export function ChatContainer() {
         }
         toast.success('Conversation deleted');
       } else if (response.status === 401) {
-        setSessionError(true)
-        toast.error('Session expired. Please sign in again.');
+        // Only set session error if user is also null
+        if (!user) {
+          setSessionError(true)
+          toast.error('Session expired. Please sign in again.');
+        } else {
+          toast.error('Access denied. Database setup may be required.');
+        }
       } else {
         toast.error('Failed to delete conversation');
       }
@@ -417,28 +480,43 @@ export function ChatContainer() {
 
   // Show error state
   if (error) {
+    const isDatabaseSetupError = error.includes('Database setup') || error.includes('User setup');
+    const isConnectionError = error.includes('Connection error') || error.includes('Failed to load');
+    
     return (
       <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden items-center justify-center">
-        <Card className="w-full max-w-sm mx-4">
+        <Card className="w-full max-w-md mx-4">
           <CardContent className="text-center p-6">
-            <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Error Loading Chat</h3>
+            <AlertCircle className={`h-12 w-12 mx-auto mb-4 ${isDatabaseSetupError ? 'text-orange-600' : 'text-red-600'}`} />
+            <h3 className="text-lg font-semibold mb-2">
+              {isDatabaseSetupError ? 'Setup Required' : isConnectionError ? 'Connection Issue' : 'Error Loading Chat'}
+            </h3>
             <p className="text-gray-600 mb-4">{error}</p>
+            
+            {isDatabaseSetupError ? (
+              <div className="text-sm text-gray-500 mb-4">
+                <p>The chat system is running but needs database setup.</p>
+                <p>You can still use the interface once setup is complete.</p>
+              </div>
+            ) : null}
+            
             <div className="flex gap-2">
               {sessionError && (
                 <Button onClick={handleRefreshSession} variant="outline" className="flex-1">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
+                  Refresh Session
                 </Button>
               )}
               <Button 
                 onClick={() => {
                   setError(null);
+                  setSessionError(false);
                   loadConversations();
                 }}
                 className={sessionError ? "flex-1" : "w-full"}
+                variant={isDatabaseSetupError ? "outline" : "default"}
               >
-                Try Again
+                {isDatabaseSetupError ? 'Check Again' : 'Try Again'}
               </Button>
             </div>
           </CardContent>
