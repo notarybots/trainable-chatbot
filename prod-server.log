@@ -13,3 +13,43 @@ Chat API called with: {
 }
 Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }
 Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }
+Chat API called with: {
+  messageCount: 1,
+  conversationId: 'test-conversation-id',
+  model: 'gpt-4.1-mini'
+}
+Chat API called with: {
+  messageCount: 1,
+  conversationId: 'test-conversation-id',
+  model: 'gpt-4.1-mini'
+}
+Chat API called with: {
+  messageCount: 1,
+  conversationId: 'test-conversation-id',
+  model: 'gpt-4.1-mini'
+}
+Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }
+Chat API called with: {
+  messageCount: 1,
+  conversationId: 'test-conversation-id',
+  model: 'gpt-4.1-mini'
+}
+Chat API called with: {
+  messageCount: 1,
+  conversationId: 'test-conversation',
+  model: 'gpt-4.1-mini'
+}
+Chat API called with: {
+  messageCount: 1,
+  conversationId: 'test-conversation',
+  model: 'gpt-4.1-mini'
+}
+Chat API called with: {
+  messageCount: 1,
+  conversationId: 'test-conversation',
+  model: 'gpt-4.1-mini'
+}
+Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }
+Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }
+Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }
+Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }

@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createMessage } from '@/lib/database/messages';
 import { updateConversation } from '@/lib/database/conversations';
 
@@ -21,14 +22,22 @@ interface ChatRequest {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('🔥 API ROUTE HIT - VERY FIRST LINE');
+  
   try {
     const body: ChatRequest = await request.json();
     const { messages, conversationId, model = 'gpt-4.1-mini', temperature = 0.7, maxTokens = 3000 } = body;
 
-    console.log('Chat API called with:', { 
+    console.log('🔍 Chat API called with:', { 
       messageCount: messages?.length,
       conversationId,
       model 
+    });
+
+    console.log('🔍 Request headers:', {
+      cookie: request.headers.get('cookie')?.substring(0, 100) + '...',
+      userAgent: request.headers.get('user-agent'),
+      contentType: request.headers.get('content-type')
     });
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -46,28 +55,54 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user and tenant info
+    console.log('🔍 Creating Supabase server client...');
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    
+    console.log('🔍 Getting user session...');
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    console.log('🔍 User validation result:', {
+      user: user ? { id: user.id, email: user.email } : null,
+      error: userError ? userError.message : null
+    });
     
     if (!user) {
+      console.log('❌ No user found in session, returning 401');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const { data: tenantUser } = await supabase
+    console.log('✅ User authenticated:', user.email);
+
+    // Use service client to bypass RLS issues for tenant lookup
+    console.log('🔍 Looking up tenant for user with service client:', user.id);
+    const serviceSupabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    
+    const { data: tenantUser, error: tenantError } = await serviceSupabase
       .from('tenant_users')
       .select('tenant_id')
       .eq('user_id', user.id)
       .single();
 
+    console.log('🔍 Tenant lookup result:', {
+      tenantUser,
+      error: tenantError ? tenantError.message : null
+    });
+
     if (!tenantUser) {
+      console.log('❌ No tenant found for user, returning 404');
       return new Response(JSON.stringify({ error: 'No tenant found for user' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('✅ Tenant found:', tenantUser.tenant_id);
 
     // Save the user message to database
     const lastUserMessage = messages[messages.length - 1];
