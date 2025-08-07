@@ -2,7 +2,7 @@
 'use client'
 
 import { useSupabase } from '@/lib/providers/supabase-provider'
-import { ChatContainer } from "@/components/chat/chat-container"
+import { AIChatContainer } from "@/components/chat/ai-chat-container"
 import { LoginForm } from "@/components/auth/login-form"
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -137,7 +137,7 @@ export function HomeContent() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <ChatContainer />
+              <AIChatContainer />
             </CardContent>
           </Card>
         </div>
