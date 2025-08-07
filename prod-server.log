@@ -11,3 +11,5 @@ Chat API called with: {
   conversationId: 'test-conv-id',
   model: 'gpt-4.1-mini'
 }
+Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }
+Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }

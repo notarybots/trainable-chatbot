@@ -54,6 +54,7 @@ export function AIChatContainer() {
       const response = await fetch('/api/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // CRITICAL FIX: Include cookies for server-side auth
         body: JSON.stringify({
           title: 'New Chat',
           metadata: {},
@@ -87,6 +88,7 @@ export function AIChatContainer() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // CRITICAL FIX: Include cookies for server-side auth
         body: JSON.stringify({
           messages: [
             ...messages.map(msg => ({
