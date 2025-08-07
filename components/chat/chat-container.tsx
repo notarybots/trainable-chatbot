@@ -38,25 +38,27 @@ export function ChatContainer() {
     }
   };
 
-  // Simplified session validation - only check auth state, not API
+  // Simplified session validation - only check auth state, not API calls
   const validateSession = () => {
+    // Only check actual authentication state, not API responses
     if (!isAuthenticated || !user) {
       console.warn('User not authenticated')
-      setSessionError(true)
       return false
     }
-    setSessionError(false)
     return true
   }
 
-  // Load conversations with enhanced error handling
+  // Clear session errors when user is authenticated and auto-load conversations
   useEffect(() => {
-    if (isAuthenticated && !authLoading) {
+    if (isAuthenticated && user && !authLoading) {
+      // Clear any session errors since user is authenticated
+      setSessionError(false);
+      setError(null);
       loadConversations();
     } else if (!authLoading) {
       setLoading(false);
     }
-  }, [isAuthenticated, authLoading]);
+  }, [isAuthenticated, authLoading, user]);
 
   // Enhanced scroll management
   useEffect(() => {
@@ -70,8 +72,10 @@ export function ChatContainer() {
   }, [chatState]);
 
   const loadConversations = async () => {
-    if (!validateSession()) {
+    // Only check authentication state, don't make API calls here
+    if (!isAuthenticated || !user) {
       setError('Authentication required')
+      setLoading(false)
       return;
     }
 
@@ -84,10 +88,20 @@ export function ChatContainer() {
         setConversations(data);
         console.log(`Loaded ${data?.length || 0} conversations`);
       } else if (response.status === 401) {
-        console.error('Unauthorized access to conversations');
-        setSessionError(true);
-        setError('Session expired - please sign in again');
-        toast.error('Session expired. Please sign in again.');
+        // 401 could be due to database/tenant issues, not session expiration
+        // Only set session error if user is actually not authenticated
+        if (!isAuthenticated || !user) {
+          console.error('User not authenticated');
+          setSessionError(true);
+          setError('Session expired - please sign in again');
+          toast.error('Session expired. Please sign in again.');
+        } else {
+          console.warn('API returned 401 but user is authenticated - likely database/tenant issue');
+          setConversations([]);
+          toast('Database setup required. Contact administrator.', { 
+            icon: '⚠️'
+          });
+        }
       } else if (response.status === 404) {
         // Handle tenant not found error - this is a setup issue, not a critical error
         const errorData = await response.json().catch(() => ({}));
@@ -100,13 +114,13 @@ export function ChatContainer() {
           });
         } else {
           console.error('API 404 error:', errorData);
-          setError('Service temporarily unavailable');
-          toast.error('Service temporarily unavailable');
+          setConversations([]);
+          toast.error('Failed to load conversations - you can still start a new chat');
         }
       } else {
         console.error('Failed to load conversations:', response.status);
-        setError('Service temporarily unavailable');
-        toast.error('Failed to load conversations');
+        setConversations([]);
+        toast.error('Failed to load conversations - you can still start a new chat');
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
@@ -119,7 +133,7 @@ export function ChatContainer() {
   };
 
   const loadConversation = async (conversationId: string) => {
-    if (!validateSession()) {
+    if (!isAuthenticated || !user) {
       toast.error('Please sign in to access conversations');
       return;
     }
@@ -131,8 +145,13 @@ export function ChatContainer() {
         setCurrentConversation(data);
         setMessages(data.messages || []);
       } else if (response.status === 401) {
-        setSessionError(true);
-        toast.error('Session expired. Please sign in again.');
+        // Only set session error if user is actually not authenticated
+        if (!isAuthenticated || !user) {
+          setSessionError(true);
+          toast.error('Session expired. Please sign in again.');
+        } else {
+          toast.error('Failed to load conversation - database setup may be required');
+        }
       } else {
         console.error('Failed to load conversation');
         toast.error('Failed to load conversation');
@@ -144,7 +163,7 @@ export function ChatContainer() {
   };
 
   const createNewConversation = async (): Promise<Conversation | null> => {
-    if (!validateSession()) {
+    if (!isAuthenticated || !user) {
       toast.error('Please sign in to create a conversation');
       return null;
     }
@@ -167,8 +186,13 @@ export function ChatContainer() {
         console.log('Created new conversation:', newConversation.id);
         return newConversation;
       } else if (response.status === 401) {
-        setSessionError(true);
-        toast.error('Session expired. Please sign in again.');
+        // Only set session error if user is actually not authenticated
+        if (!isAuthenticated || !user) {
+          setSessionError(true);
+          toast.error('Session expired. Please sign in again.');
+        } else {
+          toast.error('Failed to create conversation - database setup may be required');
+        }
         return null;
       } else {
         console.error('Failed to create conversation');
@@ -256,8 +280,13 @@ export function ChatContainer() {
         console.error('Chat API Error:', response.status, response.statusText, errorText);
         
         if (response.status === 401) {
-          setSessionError(true);
-          toast.error('Session expired. Please sign in again.');
+          // Only set session error if user is actually not authenticated
+          if (!isAuthenticated || !user) {
+            setSessionError(true);
+            toast.error('Session expired. Please sign in again.');
+          } else {
+            toast.error('Failed to send message - database setup may be required');
+          }
           return;
         }
         
@@ -304,7 +333,7 @@ export function ChatContainer() {
   };
 
   const deleteConversationHandler = async (conversationId: string) => {
-    if (!validateSession()) {
+    if (!isAuthenticated || !user) {
       toast.error('Please sign in to delete conversations');
       return;
     }
@@ -323,8 +352,13 @@ export function ChatContainer() {
         }
         toast.success('Conversation deleted');
       } else if (response.status === 401) {
-        setSessionError(true);
-        toast.error('Session expired. Please sign in again.');
+        // Only set session error if user is actually not authenticated
+        if (!isAuthenticated || !user) {
+          setSessionError(true);
+          toast.error('Session expired. Please sign in again.');
+        } else {
+          toast.error('Failed to delete conversation - database setup may be required');
+        }
       } else {
         toast.error('Failed to delete conversation');
       }
@@ -376,8 +410,8 @@ export function ChatContainer() {
     );
   }
 
-  // Show session error state
-  if (sessionError) {
+  // Show session error state only if user is genuinely not authenticated
+  if (sessionError && (!isAuthenticated || !user)) {
     return (
       <div className="flex h-full bg-gray-50 dark:bg-gray-900 relative rounded-lg overflow-hidden items-center justify-center">
         <Card className="w-full max-w-sm mx-4">
