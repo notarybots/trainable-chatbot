@@ -53,3 +53,4 @@ Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1
 Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }
 Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }
 Chat API called with: { messageCount: 1, conversationId: 'test', model: 'gpt-4.1-mini' }
+Chat API called with: { messageCount: 1, conversationId: 'test-123', model: 'gpt-4.1-mini' }

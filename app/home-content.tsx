@@ -4,6 +4,7 @@
 import { useSupabase } from '@/lib/providers/supabase-provider'
 import { AIChatContainer } from "@/components/chat/ai-chat-container"
 import { LoginForm } from "@/components/auth/login-form"
+import { AuthTest } from "@/components/debug/auth-test"
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -125,6 +126,11 @@ export function HomeContent() {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Authentication Test */}
+        <div className="max-w-md mx-auto mb-8">
+          <AuthTest />
         </div>
 
         {/* Chat Interface */}
