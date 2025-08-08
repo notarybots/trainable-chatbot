@@ -48,6 +48,23 @@ export * from './error-handling';
 // Configuration Management
 export * from './config';
 
+// Providers
+export * from './providers/base/base-provider';
+export * from './providers/openai/openai-llm-provider';
+export * from './providers/openai/openai-embeddings-provider';
+export * from './providers/openai/openai-chat-provider';
+
+// Provider Factory
+export { 
+  providerFactory,
+  createLLMService,
+  createEmbeddingsService,
+  createChatService,
+  getDefaultLLMService,
+  getDefaultEmbeddingsService,
+  getDefaultChatService
+} from './providers/factory/provider-factory';
+
 // Re-export key interfaces for convenience
 export type {
   // Core Services
@@ -270,3 +287,26 @@ export const ERROR_MESSAGES = {
   AUTHENTICATION_FAILED: 'Authentication failed',
   TIMEOUT: 'Request timed out',
 } as const;
+
+// Convenience function for quick setup
+export async function setupAI() {
+  try {
+    const { getDefaultLLMService, getDefaultChatService } = await import('./providers/factory/provider-factory');
+    const llmService = await getDefaultLLMService();
+    const chatService = await getDefaultChatService();
+    
+    return {
+      llm: llmService,
+      chat: chatService,
+      isReady: true,
+    };
+  } catch (error) {
+    console.error('Failed to setup AI services:', error);
+    return {
+      llm: null,
+      chat: null,
+      isReady: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
