@@ -112,7 +112,7 @@ export function ChatContainer() {
         },
         (result) => {
           const assistantMessage = createMessage(
-            result.content || result,
+            typeof result === 'string' ? result : (result.content || ''),
             'assistant',
             session?.id || 'unknown'
           );
