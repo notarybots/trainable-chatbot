@@ -10,6 +10,7 @@ import {
   ChatConfig,
   MultiProviderConfig,
   OpenAIConfig,
+  OpenAIEmbeddingsConfig,
   AbacusAIConfig,
   AnthropicConfig,
   VoyageAIConfig,
@@ -53,7 +54,7 @@ export class ConfigFactory {
     return this.buildFromTemplate<LLMConfig>(template, options);
   }
 
-  public createOpenAIEmbeddingsConfig(options: Partial<OpenAIConfig> = {}): EmbeddingsConfig {
+  public createOpenAIEmbeddingsConfig(options: Partial<OpenAIEmbeddingsConfig> = {}): EmbeddingsConfig {
     const template = this.getTemplate('openai_embeddings');
     if (!template) throw new Error('OpenAI Embeddings template not found');
     return this.buildFromTemplate<EmbeddingsConfig>(template, options);
@@ -553,7 +554,7 @@ export const ConfigFactoryUtils = {
     llm: (apiKey: string, options?: Partial<OpenAIConfig>) => 
       globalConfigFactory.createOpenAILLMConfig({ apiKey, ...options }),
     
-    embeddings: (apiKey: string, options?: Partial<OpenAIConfig>) => 
+    embeddings: (apiKey: string, options?: Partial<OpenAIEmbeddingsConfig>) => 
       globalConfigFactory.createOpenAIEmbeddingsConfig({ apiKey, ...options })
   },
 

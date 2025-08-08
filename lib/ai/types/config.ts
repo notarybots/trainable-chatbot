@@ -102,6 +102,12 @@ export interface AnthropicConfig extends LLMConfig {
   version?: string;
 }
 
+export interface OpenAIEmbeddingsConfig extends EmbeddingsConfig {
+  provider: 'openai';
+  organization?: string;
+  project?: string;
+}
+
 export interface VoyageAIConfig extends EmbeddingsConfig {
   provider: 'voyageai';
 }
