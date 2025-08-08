@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
+import { getCurrentTenantId } from '@/lib/tenant';
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -27,6 +28,10 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    // Get current tenant context for multi-tenant isolation
+    const tenantId = await getCurrentTenantId();
+    console.log(`Processing chat request for tenant: ${tenantId}`);
 
     // Add system message for chatbot context
     const systemMessage: ChatMessage = {
@@ -83,13 +88,14 @@ export async function POST(request: NextRequest) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6);
                 if (data === '[DONE]') {
-                  // Send final result
+                  // Send final result with tenant context
                   const finalData = JSON.stringify({
                     status: 'completed',
                     result: {
                       content: buffer,
                       sessionId,
                       timestamp: new Date().toISOString(),
+                      tenantId,
                     }
                   });
                   controller.enqueue(encoder.encode(`data: ${finalData}\n\n`));
