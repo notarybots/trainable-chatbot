@@ -3,31 +3,16 @@
   - Environments: .env.local, .env
 
  ✓ Starting...
- ✓ Ready in 3s
- ✓ Compiled /middleware in 516ms (144 modules)
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 2.3s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 639ms (144 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (108kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
  ○ Compiling /login ...
- ✓ Compiled /login in 5.8s (696 modules)
- HEAD /login 200 in 6136ms
- ✓ Compiled in 609ms (345 modules)
- ✓ Compiled in 324ms (333 modules)
- ✓ Compiled in 153ms (333 modules)
- ✓ Compiled in 148ms (333 modules)
- ✓ Compiled in 365ms (345 modules)
- ✓ Compiled in 287ms (345 modules)
- ✓ Compiled /login in 210ms (344 modules)
- GET /login 200 in 356ms
- ✓ Compiled in 181ms (677 modules)
- ○ Compiling / ...
- ✓ Compiled / in 1654ms (1303 modules)
- GET / 200 in 1911ms
- ✓ Compiled /login in 238ms (670 modules)
- GET /login 200 in 370ms
- GET / 200 in 63ms
- ✓ Compiled /api/chat in 472ms (703 modules)
- POST /api/chat 200 in 1121ms
- POST /api/chat 200 in 1301ms
- POST /api/chat 200 in 509ms
- POST /api/chat 200 in 523ms
- POST /api/chat 200 in 485ms
- GET /login 200 in 92ms
- GET /login 200 in 46ms
+ ✓ Compiled /login in 4.2s (696 modules)
+ GET /login 200 in 4662ms
+ ✓ Compiled in 508ms (345 modules)
