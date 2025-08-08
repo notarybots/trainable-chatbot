@@ -311,10 +311,13 @@ export function withCircuitBreaker(
     const originalMethod = descriptor.value;
     if (!originalMethod) return;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: { provider?: AIProvider; serviceType?: AIServiceType }, ...args: any[]) {
+      const provider = (this as any)?.provider || 'openai';
+      const serviceType = (this as any)?.serviceType || 'llm';
+      
       const circuitBreaker = globalCircuitBreakerManager.getCircuitBreaker(
-        this.provider,
-        this.serviceType,
+        provider,
+        serviceType,
         options
       );
 

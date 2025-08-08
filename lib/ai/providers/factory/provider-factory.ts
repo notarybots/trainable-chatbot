@@ -153,8 +153,9 @@ export class ProviderFactory {
     const serviceKey = `${provider}-${serviceType}`;
     
     // Check if service exists in registry
-    if (this.serviceRegistry.has(serviceKey)) {
-      return this.serviceRegistry.get(serviceKey)!;
+    const existingService = this.serviceRegistry.get(serviceKey);
+    if (existingService) {
+      return existingService;
     }
 
     // Create new service
@@ -283,11 +284,12 @@ export class ProviderFactory {
       console.warn('Embeddings service not available:', error);
     }
 
+    const llmConfig = llmService.getConfig();
     const config: ChatConfig = {
       provider: llmService.provider as any,
       service: 'chat',
-      apiKey: llmService.getConfig().apiKey,
-      llmConfig: llmService.getConfig() as LLMConfig,
+      apiKey: llmConfig?.apiKey || '',
+      llmConfig: llmConfig as LLMConfig,
       embeddingsConfig: embeddingsService?.getConfig(),
       memoryStrategy: 'sliding_window',
       memorySize: 20,
@@ -354,8 +356,21 @@ export class ProviderFactory {
       );
     }
 
-    const serviceConfig = this.config.services[serviceType];
-    if (!serviceConfig) {
+    // Only supported service types in registry
+    const supportedServices = ['llm', 'embeddings', 'chat'] as const;
+    type SupportedServiceType = typeof supportedServices[number];
+    
+    if (!supportedServices.includes(serviceType as SupportedServiceType)) {
+      throw createAIError(
+        'validation',
+        `Service type '${serviceType}' not supported in registry`,
+        provider,
+        serviceType
+      );
+    }
+
+    const serviceConfig = this.config.services[serviceType as SupportedServiceType];
+    if (!serviceConfig || !serviceConfig.primary) {
       throw createAIError(
         'validation',
         `No configuration found for service type: ${serviceType}`,

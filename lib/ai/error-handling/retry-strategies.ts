@@ -225,7 +225,7 @@ export const RetryStrategies = {
 };
 
 // Provider-specific retry strategies
-export const ProviderRetryStrategies = {
+export const ProviderRetryStrategies: Record<AIProvider | 'custom', RetryStrategy> = {
   openai: new RetryStrategy({
     maxAttempts: 3,
     baseDelay: 1000,
@@ -267,6 +267,14 @@ export const ProviderRetryStrategies = {
     jitter: true
   }),
 
+  huggingface: new RetryStrategy({
+    maxAttempts: 3,
+    baseDelay: 1000,
+    maxDelay: 15000,
+    backoffMultiplier: 2,
+    jitter: true
+  }),
+
   custom: new RetryStrategy({
     maxAttempts: 2,
     baseDelay: 1000,
@@ -281,11 +289,11 @@ export function getRetryStrategy(
   provider: AIProvider,
   scenario?: 'conservative' | 'aggressive' | 'rateLimitOptimized' | 'networkOptimized'
 ): RetryStrategy {
-  if (scenario) {
+  if (scenario && scenario in RetryStrategies) {
     return RetryStrategies[scenario];
   }
   
-  return ProviderRetryStrategies[provider] || ProviderRetryStrategies.custom;
+  return ProviderRetryStrategies[provider] ?? ProviderRetryStrategies.custom;
 }
 
 // Decorator for automatic retry functionality
@@ -298,12 +306,15 @@ export function withRetry(retryStrategy: RetryStrategy) {
     const originalMethod = descriptor.value;
     if (!originalMethod) return;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: { provider?: AIProvider; serviceType?: AIServiceType }, ...args: any[]) {
+      const provider = (this as any)?.provider || 'openai';
+      const service = (this as any)?.serviceType || 'llm';
+      
       return retryStrategy.execute(
         () => originalMethod.apply(this, args),
         {
-          provider: this.provider,
-          service: this.serviceType
+          provider,
+          service
         }
       );
     } as T;

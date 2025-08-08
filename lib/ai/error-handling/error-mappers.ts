@@ -148,7 +148,7 @@ export class ProviderErrorMapper {
     if (message.includes('model not found') || message.includes('model does not exist')) {
       return 'model_not_found';
     }
-    if (status >= 500 || message.includes('internal server error')) {
+    if ((status !== undefined && status >= 500) || message.includes('internal server error')) {
       return 'service_unavailable';
     }
     if (message.includes('timeout') || message.includes('timed out')) {
@@ -199,7 +199,7 @@ export class ProviderErrorMapper {
         retryable: false
       },
       {
-        condition: (error) => error.status >= 500,
+        condition: (error) => error.status !== undefined && error.status >= 500,
         mapTo: 'service_unavailable',
         severity: 'high',
         retryable: true
@@ -233,7 +233,7 @@ export class ProviderErrorMapper {
         retryable: false
       },
       {
-        condition: (error) => error.status >= 500,
+        condition: (error) => error.status !== undefined && error.status >= 500,
         mapTo: 'service_unavailable',
         severity: 'high',
         retryable: true
@@ -308,7 +308,7 @@ export class ProviderErrorMapper {
         retryable: true
       },
       {
-        condition: (error) => error.status >= 500,
+        condition: (error) => error.status !== undefined && error.status >= 500,
         mapTo: 'service_unavailable',
         severity: 'high',
         retryable: true

@@ -25,6 +25,7 @@ export interface PropertySchema {
   items?: PropertySchema;
   properties?: Record<string, PropertySchema>;
   required?: string[];
+  additionalProperties?: boolean;
 }
 
 // Base AI Service Configuration Schema
