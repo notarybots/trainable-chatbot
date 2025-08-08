@@ -27,9 +27,22 @@ export function ChatContainer() {
     scrollToBottom();
   }, [messages]);
 
+  // Safe ID generation for sessions
+  const generateSessionId = (): string => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    // Fallback UUID generation
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
   const createNewSession = (): ChatSession => {
     const newSession: ChatSession = {
-      id: crypto.randomUUID(),
+      id: generateSessionId(),
       title: 'New Chat',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -98,11 +111,20 @@ export function ChatContainer() {
           setProgress(progressValue);
         },
         (result) => {
+          console.log('DEBUG: onComplete called with result:', result);
+          console.log('DEBUG: result type:', typeof result);
+          console.log('DEBUG: result.content:', result?.content);
+          
+          const content = typeof result === 'string' ? result : (result?.content || '');
+          console.log('DEBUG: extracted content:', content);
+          
           const assistantMessage = createMessage(
-            result.content || result,
+            content,
             'assistant',
             session?.id || 'unknown'
           );
+          console.log('DEBUG: created assistant message:', assistantMessage);
+          
           setMessages(prev => [...prev, assistantMessage]);
           setChatState('completed');
           setProgress(100);

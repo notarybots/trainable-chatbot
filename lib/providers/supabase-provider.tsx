@@ -21,29 +21,82 @@ export default function SupabaseProvider({
 }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const [isMounted, setIsMounted] = useState(false)
+  const [supabase] = useState(() => createClient()) // Memoize client creation
+
+  // Handle client-side mounting to prevent hydration issues
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   useEffect(() => {
+    if (!isMounted || !supabase) return
+
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      setLoading(false)
+      try {
+        const result = await supabase?.auth?.getUser?.()
+        if (result?.data?.user) {
+          setUser(result.data.user)
+        } else {
+          setUser(null)
+        }
+      } catch (error) {
+        console.warn('Error getting user:', error)
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
     }
 
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null)
+    let subscription: any = null;
+    
+    try {
+      if (supabase?.auth?.onAuthStateChange) {
+        const authStateChange = supabase.auth.onAuthStateChange(
+          (event: string, session: any) => {
+            try {
+              setUser(session?.user ?? null)
+              setLoading(false)
+            } catch (error) {
+              console.warn('Error in auth state change handler:', error)
+              setUser(null)
+              setLoading(false)
+            }
+          }
+        )
+        subscription = authStateChange?.data?.subscription;
+      } else {
         setLoading(false)
       }
-    )
+    } catch (error) {
+      console.warn('Error setting up auth state change:', error)
+      setLoading(false)
+    }
 
-    return () => subscription.unsubscribe()
-  }, [supabase.auth])
+    return () => {
+      try {
+        if (subscription?.unsubscribe) {
+          subscription.unsubscribe()
+        }
+      } catch (error) {
+        console.warn('Error unsubscribing from auth state change:', error)
+      }
+    }
+  }, [isMounted, supabase])
+
+  // Prevent hydration mismatch by not rendering with real data until mounted
+  if (!isMounted) {
+    return (
+      <Context.Provider value={{ supabase: supabase as any, user: null, loading: true }}>
+        {children}
+      </Context.Provider>
+    )
+  }
 
   return (
-    <Context.Provider value={{ supabase, user, loading }}>
+    <Context.Provider value={{ supabase: supabase as any, user, loading }}>
       {children}
     </Context.Provider>
   )
