@@ -43,25 +43,31 @@ export default function TenantProvider({
   const fetchTenant = async (subdomain: string) => {
     try {
       const { data, error } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('subdomain', subdomain)
-        .single()
+        ?.from?.('tenants')
+        ?.select?.('*')
+        ?.eq?.('subdomain', subdomain)
+        ?.single?.() ?? { data: null, error: new Error('Supabase not configured') }
 
       if (error) {
         console.error('Error fetching tenant:', error)
         // Fallback to demo tenant
-        const { data: fallback } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('subdomain', 'demo')
-          .single()
-        setTenant(fallback)
+        try {
+          const { data: fallback } = await supabase
+            ?.from?.('tenants')
+            ?.select?.('*')
+            ?.eq?.('subdomain', 'demo')
+            ?.single?.() ?? { data: null, error: new Error('Supabase not configured') }
+          setTenant(fallback ?? null)
+        } catch (fallbackError) {
+          console.error('Error fetching fallback tenant:', fallbackError)
+          setTenant(null)
+        }
       } else {
-        setTenant(data)
+        setTenant(data ?? null)
       }
     } catch (error) {
       console.error('Error in fetchTenant:', error)
+      setTenant(null)
     } finally {
       setLoading(false)
     }

@@ -25,22 +25,40 @@ export default function SupabaseProvider({
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      setLoading(false)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user ?? null)
+      } catch (error) {
+        console.error('Error getting user:', error)
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
     }
 
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null)
-        setLoading(false)
-      }
-    )
+    let subscription: any;
+    
+    try {
+      const authStateChange = supabase.auth.onAuthStateChange(
+        async (event: any, session: any) => {
+          setUser(session?.user ?? null)
+          setLoading(false)
+        }
+      )
+      subscription = authStateChange?.data?.subscription;
+    } catch (error) {
+      console.error('Error setting up auth state change:', error)
+      setLoading(false)
+    }
 
-    return () => subscription.unsubscribe()
-  }, [supabase.auth])
+    return () => {
+      if (subscription?.unsubscribe) {
+        subscription.unsubscribe()
+      }
+    }
+  }, [supabase?.auth])
 
   return (
     <Context.Provider value={{ supabase, user, loading }}>

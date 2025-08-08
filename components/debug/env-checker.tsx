@@ -20,22 +20,30 @@ export function EnvChecker() {
   useEffect(() => {
     const checkEnvironment = async () => {
       try {
-        // Check environment variables
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'MISSING';
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'MISSING';
+        // Check environment variables - use safer access pattern
+        const supabaseUrl = typeof window !== 'undefined' 
+          ? process.env.NEXT_PUBLIC_SUPABASE_URL || 'MISSING'
+          : 'Checking...';
+        const supabaseAnonKey = typeof window !== 'undefined' 
+          ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'MISSING'
+          : 'Checking...';
 
-        // Check Supabase connection
+        // Check Supabase connection with proper error handling
         let supabaseConnection = 'Failed';
         try {
           const supabase = createClient();
-          const { data, error } = await supabase.auth.getSession();
-          if (!error) {
-            supabaseConnection = 'Connected';
+          if (supabase && typeof supabase.auth?.getSession === 'function') {
+            const { data, error } = await supabase.auth.getSession();
+            if (!error) {
+              supabaseConnection = 'Connected';
+            } else {
+              supabaseConnection = `Error: ${error?.message || 'Unknown error'}`;
+            }
           } else {
-            supabaseConnection = `Error: ${error.message}`;
+            supabaseConnection = 'Client not initialized (env vars missing)';
           }
         } catch (err) {
-          supabaseConnection = `Connection Error: ${err}`;
+          supabaseConnection = `Connection Error: ${err instanceof Error ? err.message : 'Unknown error'}`;
         }
 
         // Check Chat API with detailed error logging
