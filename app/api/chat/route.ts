@@ -32,6 +32,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // TEMPORARY FIX: Force fallback to direct API call to bypass AI abstraction layer issues
+    console.log('Forcing fallback to direct API call to fix "Just now" issue');
+    return fallbackToDirectAPI(request);
+
     // Get LLM service from AI abstraction layer
     llmService = await getDefaultLLMService();
 

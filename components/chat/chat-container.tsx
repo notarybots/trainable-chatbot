@@ -111,11 +111,20 @@ export function ChatContainer() {
           setProgress(progressValue);
         },
         (result) => {
+          console.log('DEBUG: onComplete called with result:', result);
+          console.log('DEBUG: result type:', typeof result);
+          console.log('DEBUG: result.content:', result?.content);
+          
+          const content = typeof result === 'string' ? result : (result?.content || '');
+          console.log('DEBUG: extracted content:', content);
+          
           const assistantMessage = createMessage(
-            typeof result === 'string' ? result : (result.content || ''),
+            content,
             'assistant',
             session?.id || 'unknown'
           );
+          console.log('DEBUG: created assistant message:', assistantMessage);
+          
           setMessages(prev => [...prev, assistantMessage]);
           setChatState('completed');
           setProgress(100);
